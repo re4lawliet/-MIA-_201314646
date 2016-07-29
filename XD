@@ -1,2 +1,13 @@
  hola mundo Comit Inicial
 
+/**************************************************************************/
+/**********GITHUB EN LINEA DE COMANDOS*************************************/
+/**************************************************************************/
+
+git push origin master
+git add .
+git commit -m "Comit Inicial:Interprete,CrearDiscos Fecha:29-julio-2016"
+git config --global push.default matching
+git config --global push.default simple
+git push --set-upstream origin master
+git push
