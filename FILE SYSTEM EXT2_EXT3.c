@@ -36,6 +36,7 @@ int ContadorComandosExitosos=0;
 int ErrorInterprete=0;
 int ErrorComando=0;
 int ErrorCrearDisco=0;
+int ErrorEliminarDisco=0;
 int ErrorT=0;
 int fin=0;
 
@@ -252,6 +253,7 @@ void menu_principal (){
         ErrorInterprete=0;
         ErrorComando=0;
         ErrorCrearDisco=0;
+        ErrorEliminarDisco=0;
         ContadorInstrucciones=0;
         ContadorComandosExitosos=0;
         fin=0;
@@ -296,6 +298,7 @@ void menu_principal (){
                 ErrorInterprete=0;
                 ErrorComando=0;
                 ErrorCrearDisco=0;
+                ErrorEliminarDisco=0;
                 ContadorInstrucciones=0;
                 ContadorComandosExitosos=0;
                 fin=0;
@@ -609,8 +612,6 @@ void Interprete(char entrada[])
                      while(entrada[contador]!='\"') //&& entrada[contador]!=' ' esto se quita si truena
                      {
                      prueba=entrada[contador];
-                     //parametro=ConcatenarCadenaCaracter(parametro,entrada[contador]);
-                     //char *x4=entrada[contador];
                      char y5[1];
                      y5[0]=entrada[contador];
                      strncat(parametro,y5,1);
@@ -688,7 +689,6 @@ void Interprete(char entrada[])
             {
                 //agrega el directorio
                 path=2;
-                //nuevafuncion.path=parametro;
                 strcpy(nuevafuncion.path,parametro);
                 limpiarvar(parametro,100);
                 limpiarvar(nombreparametro,100);
@@ -696,7 +696,6 @@ void Interprete(char entrada[])
             if(!strcmp(nombreparametro,"name"))//------------------reconoce name
             {
                 name=2;
-                //nuevafuncion.name=parametro;
                 strcpy(nuevafuncion.name,parametro);
                 limpiarvar(parametro,100);
                 limpiarvar(nombreparametro,100);
@@ -735,7 +734,7 @@ void Interprete(char entrada[])
 
                         if(instruccion!=NULL||instruccion[0]!='\0'){
 
-                            if(!strcmp(instruccion,"exec")){
+                            if(!strcmp(instruccion,"exec")){//******************EXEC
 
                                 printf("\n-----------------------------------------------------------------------\n");
                                 printf("/******************Ejecutando COMANDO...****************************/\n");
@@ -746,7 +745,6 @@ void Interprete(char entrada[])
                                 {
                                     printf("\n\n Ejecutar Script... \n\n");
                                     //--------------------------------------------------------Ejecutar Script
-                                    //nuevafuncion.pat
                                     char *f=LeerScript(nuevafuncion.path);
                                     printf("\n\n La Cadena Final es:  %s \n\n",f);
 
@@ -758,7 +756,8 @@ void Interprete(char entrada[])
                                     printf("\n\nInterprete #_ ERROR_1.6: Ingrese todos los parametros obligatorios de 'exec'\n\n");
                                     ErrorComando++;
                                 }
-                            }else if(!strcmp(instruccion,"mkdisk")){
+                            //FIN DEL EXEC
+                            }else if(!strcmp(instruccion,"mkdisk")){//**********MKDISK
 
                                 printf("\n-----------------------------------------------------------------------\n");
                                 printf("/******************Ejecutando COMANDO...****************************/\n");
@@ -803,6 +802,56 @@ void Interprete(char entrada[])
                                 limpiarvar(instruccion,100);
 
                             }//FIN DEL ,MKDISK
+                            else if(!strcmp(instruccion,"rmdisk")){//***********RMDISK
+
+                                if(path==1&&numeroparametros==1){
+
+                                    int opcion;
+                                    printf("%s\n", "(!)-¿Desea eliminar este Disco?");
+                                    printf("%s\n", "1-Si");
+                                    printf("%s\n", "2-no");
+
+                                    printf("%s\n", "");
+                                    printf(">>>>:~$ ");
+                                    scanf("%d",&opcion);
+
+                                    if(opcion>0 && opcion<3){
+
+                                    switch(opcion)
+                                    {
+                                    case 1:
+
+                                        printf("Eliminando disco...\n");
+                                        //------------------------------------------------------EliminarDisco(nuevafuncion);
+                                        EliminarDisco(nuevafuncion);
+                                        limpiarvar(instruccion,100);
+
+                                    break;
+                                    case 2:
+                                        printf("*******OPERACION CANCELADA*********\n");
+                                    break;
+                                    default:
+                                        printf("Error FATAL \n");
+                                    break;
+                                    }
+                                    }else
+                                    {
+                                     opcion=1;
+                                     printf(" \n");
+                                     printf("%s\n", ">>>> Error De Seleccion <<<< ");
+
+                                    }
+
+                                }else{
+                                    printf("\n\nInterprete #_ ERROR_3.1: Parametros 'rmdisk' Invalidos\n\n");
+                                    ErrorComando++;
+                                }
+
+                            }//FIN DEL RMDISK
+                            else{
+                                //printf("\n\nInterprete #_ ERROR_3.0: ERROR EN EL COMANDO Invalido\n\n");
+                                //ErrorComando++;
+                            }
 
                         }else{
                            printf("\n\n-------------------------------------------------------------No Hay Instruccion\n\n");
@@ -837,7 +886,7 @@ if(ErrorInterprete==0 && fin==0){
 
     if(instruccion!=NULL||instruccion[0]!='\0'){
 
-        if(!strcmp(instruccion,"exec")){
+        if(!strcmp(instruccion,"exec")){//**************************************exec
 
             printf("\n-----------------------------------------------------------------------\n");
             printf("/******************Ejecutando COMANDO...****************************/\n");
@@ -848,24 +897,22 @@ if(ErrorInterprete==0 && fin==0){
             {
                 printf("\n\n Ejecutar Script... \n\n");
                 //--------------------------------------------------------Ejecutar Script
-                //nuevafuncion.pat
                 char *f=LeerScript(nuevafuncion.path);
                 printf("\n\n La Cadena Final es:  %s \n\n",f);
 
-               Interprete(f);
-               limpiarvar(instruccion,100);
+                Interprete(f);
+                limpiarvar(instruccion,100);
 
 
             }else{
                 printf("\n\nInterprete #_ ERROR_1.6: Ingrese todos los parametros obligatorios de 'exec'\n\n");
                 ErrorComando++;
             }
-        }else if(!strcmp(instruccion,"mkdisk")){
+        }else if(!strcmp(instruccion,"mkdisk")){//*******************************mkdisk
 
             printf("\n-----------------------------------------------------------------------\n");
             printf("/******************Ejecutando COMANDO...****************************/\n");
             printf("-----------------------------------------------------------------------\n\n");
-
 
             if(unit==0){
                 printf("Colocando unit Aleatoria...\n");
@@ -904,7 +951,55 @@ if(ErrorInterprete==0 && fin==0){
 
             ContadorInstrucciones++;
             limpiarvar(instruccion,100);
-            }//fin del mkdisk
+        }//fin del mkdisk
+        else if(!strcmp(instruccion,"rmdisk")){//*******************************rmdisk
+
+            if(path==1&&numeroparametros==1){
+            int opcion;
+            printf("%s\n", "(!)-¿Desea eliminar este Disco?");
+            printf("%s\n", "1-Si");
+            printf("%s\n", "2-no");
+
+            printf("%s\n", "");
+            printf(">>>>:~$ ");
+            scanf("%d",&opcion);
+
+            if(opcion>0 && opcion<3){
+
+            switch(opcion)
+            {
+            case 1:
+
+                printf("Eliminando disco...\n");
+                //------------------------------------------------------EliminarDisco(nuevafuncion);
+                EliminarDisco(nuevafuncion);
+                limpiarvar(instruccion,100);
+
+            break;
+            case 2:
+                printf("*******OPERACION CANCELADA*********\n");
+            break;
+            default:
+                printf("Error FATAL \n");
+            break;
+            }
+            }else
+            {
+             opcion=1;
+             printf(" \n");
+             printf("%s\n", ">>>> Error De Seleccion <<<< ");
+
+            }
+
+        }else{
+            printf("\n\nInterprete #_ ERROR_3.1: Parametros 'rmdisk' Invalidos\n\n");
+            ErrorComando++;
+        }
+        }//fin del rmdisk
+        else{
+            //printf("\n\nInterprete #_ ERROR_3.0: ERROR EN EL COMANDO Invalido\n\n");
+            //ErrorComando++;
+        }
 
     }else{
        printf("\n\n-------------------------------------------------------------No Hay Instruccion\n\n");
@@ -1116,7 +1211,55 @@ void CrearDisco(Funcion funcion)
 
 }
 
+void EliminarDisco(Funcion funcion){
 
+
+//******************* Quita "comillas" en la path **************************
+    char pathauxiliar[100];
+    strcpy(pathauxiliar,funcion.path);
+
+    char finalizado[100];
+    strcpy(finalizado,"cd /\n");
+    if(pathauxiliar[0]=='\"')
+    {
+        limpiarvar(funcion.path,100);
+        int q=1;
+        while(pathauxiliar[q]!='\"')
+        {
+            char c2[1];
+            c2[0]=pathauxiliar[q];
+            strncat(funcion.path,c2,1);
+            q++;
+        }
+
+    }
+  //**************************************************************************
+
+
+    FILE *fichero;
+    fichero = fopen(funcion.path, "r" );    /* El fichero ha de existir primeramente */
+    if(fichero != NULL)
+    {
+        fclose(fichero);
+        if(remove(funcion.path) == 0) {
+
+            printf("************************************************************");
+            printf( "---'DISCO ELIMINADO CON EXITO'--%s :S\n\n",funcion.path );
+            printf("************************************************************");
+            ContadorComandosExitosos++;
+        }
+        else{
+            printf( "\nInterprete #_ ERROR_2.8 El Archivo no pudo ser eliminado...\n" );
+            ErrorEliminarDisco++;
+        }
+    }
+    else {
+    printf( "Interprete #_ ERROR_2.9_: El archivo no fue encontrado...\n" );
+    ErrorEliminarDisco++;
+    //fclose(fichero);
+    }
+
+}
 
 
 
