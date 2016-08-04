@@ -28,16 +28,23 @@
 //-----------------------------------------------------------------
 /********************Area de variables globales********************************/
 
+
+
 char *auxconc;
 char *auxconc2;
 
 int ContadorInstrucciones=0;
 int ContadorComandosExitosos=0;
+
+
 int ErrorInterprete=0;
 int ErrorComando=0;
 int ErrorCrearDisco=0;
 int ErrorEliminarDisco=0;
+int ErrorCrearParticionPrimaria=0;
 int ErrorT=0;
+
+
 int fin=0;
 
 /********************Area de Structs*******************************************/
@@ -254,6 +261,8 @@ void menu_principal (){
         ErrorComando=0;
         ErrorCrearDisco=0;
         ErrorEliminarDisco=0;
+        ErrorCrearParticionPrimaria=0;
+
         ContadorInstrucciones=0;
         ContadorComandosExitosos=0;
         fin=0;
@@ -289,6 +298,8 @@ void menu_principal (){
                 printf("|-Errores Interprete:    '%i'      |\n",ErrorInterprete);
                 printf("|-Errores Comando:       '%i'      |\n",ErrorComando);
                 printf("|-Errores CrearDisco:    '%i'      |\n",ErrorCrearDisco);
+                printf("|-Errores EliminarDisco: '%i'      |\n",ErrorEliminarDisco);
+                printf("|-Errores CrearPartPrim: '%i'      |\n",ErrorCrearParticionPrimaria);
                 printf("|                                 |\n");
                 printf("|+Instrucciones Ejetutadas:  '%i'  |\n",ContadorInstrucciones);
                 printf("|+Instrucciones Exitosas  :  '%i'  |\n",ContadorComandosExitosos);
@@ -299,6 +310,8 @@ void menu_principal (){
                 ErrorComando=0;
                 ErrorCrearDisco=0;
                 ErrorEliminarDisco=0;
+                ErrorCrearParticionPrimaria=0;
+
                 ContadorInstrucciones=0;
                 ContadorComandosExitosos=0;
                 fin=0;
@@ -397,6 +410,7 @@ void Interprete(char entrada[])
         }else if(entrada[contador]=='\\')//--------------------si es doble barra
         {
             barraactiva=1;
+            printf(":::::Reconocido: CONTINUA EL MISMO COMANDO EN OTRA LINEA ARRIBA EL \\::::::\n");
             contador++;
         }else if(entrada[contador]=='-'){//---------------------------si es Guion PARAMETROS OPCIONALES
 
@@ -543,17 +557,79 @@ void Interprete(char entrada[])
             if(!strcmp(nombreparametro,"type"))//------------------reconoce type
             {
 
+                type=1;
+                if(parametro[0]=='p' || parametro[0]=='e'  || parametro[0]=='l'||parametro[0]=='P' || parametro[0]=='E'  || parametro[0]=='L'){
+                    nuevafuncion.type=parametro[0];
+                    limpiarvar(parametro,100);
+                    limpiarvar(nombreparametro,100);
+                }
+                else{
+                type=0;
+                    printf("\n\n Interprete #_ ERROR_3.4: Parametro de 'type' Invalido \n\n");
+                    ErrorInterprete++;
+                }
+
             }else
             if(!strcmp(nombreparametro,"fit"))//--------------------reconoce fit
             {
+
+                fit=1;
+                if(!strcmp(parametro,"bf") || !strcmp(parametro,"ff") || !strcmp(parametro,"wf")||!strcmp(parametro,"BF") || !strcmp(parametro,"FF") || !strcmp(parametro,"WF")  )
+                {
+                    strcpy(nuevafuncion.fit,parametro);
+                    limpiarvar(parametro,100);
+                    limpiarvar(nombreparametro,100);
+                }
+                else
+                {
+                    fit=0;
+                    printf("\n\n Interprete #_ ERROR: Parametro de 'fit' Invalido \n\n");
+                    ErrorInterprete++;
+                }
 
             }else
             if(!strcmp(nombreparametro,"delete"))//--------------reconoce delete
             {
 
+                delete_=1;
+                if((!strcmp(parametro,"fast")) || (!strcmp(parametro,"full"))||(!strcmp(parametro,"FULL")) || (!strcmp(parametro,"FAST")) )
+                {
+                    strcpy(nuevafuncion.delete_,parametro);
+                    limpiarvar(parametro,100);
+                    limpiarvar(nombreparametro,100);
+                }
+                else
+                {
+                    delete_=0;
+                    printf("\n\n Interprete #_ ERROR_3.5: Parametro de 'delete' Invalido \n\n");
+                    ErrorInterprete++;
+                }
+
             }else
             if(!strcmp(nombreparametro,"add"))//--------------------reconoce add
             {
+
+                add=1;
+                if(CadenaEsNumero(parametro)==0)
+                {
+                    nuevafuncion.add=atoi(parametro);
+                    limpiarvar(parametro,100);
+                    limpiarvar(nombreparametro,100);
+                }
+                else if(parametro[0]=='-')
+                {
+                    if(CadenaEsNumero(parametro)==0)
+                    {
+                        nuevafuncion.add=atoi(parametro)*-1;
+                        limpiarvar(parametro,100);
+                        limpiarvar(nombreparametro,100);
+                    }
+                }
+                else{
+                    printf("\n\n Interprete #_ ERROR_3.6: Parametro de 'add' Invalido (debe ser numero)\n\n");
+                    ErrorInterprete++;
+                    add=0;
+                }
 
             }else{
                 printf("\n\n Interprete #_ ERROR_1.4: Parametro Opcional Invalido \n\n");
@@ -703,17 +779,77 @@ void Interprete(char entrada[])
             if(!strcmp(nombreparametro,"type"))//------------------reconoce type
             {
 
+                type=2;
+                if(parametro[0]=='p' || parametro[0]=='e'  || parametro[0]=='l'||parametro[0]=='P' || parametro[0]=='E'  || parametro[0]=='L'){
+                    nuevafuncion.type=parametro[0];
+                    limpiarvar(parametro,100);
+                    limpiarvar(nombreparametro,100);
+                }
+                else{
+                type=0;
+                    printf("\n\n Interprete #_ ERROR_3.4: Parametro de 'type' Invalido \n\n");
+                    ErrorInterprete++;
+                }
+
             }else
             if(!strcmp(nombreparametro,"fit"))//--------------------reconoce fit
             {
 
+                fit=2;
+                if(!strcmp(parametro,"bf") || !strcmp(parametro,"ff") || !strcmp(parametro,"wf")||!strcmp(parametro,"BF") || !strcmp(parametro,"FF") || !strcmp(parametro,"WF")  )
+                {
+                    strcpy(nuevafuncion.fit,parametro);
+                    limpiarvar(parametro,100);
+                    limpiarvar(nombreparametro,100);
+                }
+                else
+                {
+                    fit=0;
+                    printf("\n\n Interprete #_ ERROR: Parametro de 'fit' Invalido \n\n");
+                    ErrorInterprete++;
+                }
+
             }else
             if(!strcmp(nombreparametro,"delete"))//--------------reconoce delete
             {
-
+                delete_=2;
+                if((!strcmp(parametro,"fast")) || (!strcmp(parametro,"full"))||(!strcmp(parametro,"FULL")) || (!strcmp(parametro,"FAST")) )
+                {
+                    strcpy(nuevafuncion.delete_,parametro);
+                    limpiarvar(parametro,100);
+                    limpiarvar(nombreparametro,100);
+                }
+                else
+                {
+                    delete_=0;
+                    printf("\n\n Interprete #_ ERROR_3.5: Parametro de 'delete' Invalido \n\n");
+                    ErrorInterprete++;
+                }
             }else
             if(!strcmp(nombreparametro,"add"))//--------------------reconoce add
             {
+
+                add=2;
+                if(CadenaEsNumero(parametro)==0)
+                {
+                    nuevafuncion.add=atoi(parametro);
+                    limpiarvar(parametro,100);
+                    limpiarvar(nombreparametro,100);
+                }
+                else if(parametro[0]=='-')
+                {
+                    if(CadenaEsNumero(parametro)==0)
+                    {
+                        nuevafuncion.add=atoi(parametro)*-1;
+                        limpiarvar(parametro,100);
+                        limpiarvar(nombreparametro,100);
+                    }
+                }
+                else{
+                    printf("\n\n Interprete #_ ERROR_3.6: Parametro de 'add' Invalido (debe ser numero)\n\n");
+                    ErrorInterprete++;
+                    add=0;
+                }
 
             }else{
             printf("\n\n Interprete #_ ERROR_1.5: Parametro obligatorio Invalido \n\n");
@@ -725,9 +861,8 @@ void Interprete(char entrada[])
 
                 contador++;
                 printf(":::::Reconocido: SAlto Linea::::::\n");
-                if(entrada[contador]=='\\'){
-                    printf(":::::Reconocido: CONTINUA EL MISMO COMANDO EN OTRA LINEA::::::\n");
-                    contador++;
+                if((entrada[contador]=='-'||entrada[contador]=='+')){
+
                 }else{
 
                     if(ErrorInterprete==0 && fin==0){
@@ -803,7 +938,7 @@ void Interprete(char entrada[])
 
                             }//FIN DEL ,MKDISK
                             else if(!strcmp(instruccion,"rmdisk")){//***********RMDISK
-
+                                ContadorInstrucciones++;
                                 if(path==1&&numeroparametros==1){
 
                                     int opcion;
@@ -847,7 +982,117 @@ void Interprete(char entrada[])
                                     ErrorComando++;
                                 }
 
+
                             }//FIN DEL RMDISK
+                            else if(!strcmp(instruccion,"fdisk")){//------------FDISK
+
+                                printf("\n-----------------------------------------------------------------------\n");
+                                printf("/******************Ejecutando COMANDO...****************************/\n");
+                                printf("-----------------------------------------------------------------------\n\n");
+
+                                ContadorInstrucciones++;
+                                if(path==1 && name==1)
+                                {
+                                    if(unit==0){
+                                        printf("Colocando unit Aleatoria...\n");
+                                        nuevafuncion.unit='k';
+                                    }
+                                    if(type==0){
+                                        printf("Colocando type Aleatorio...\n");
+                                        nuevafuncion.type='p';
+                                    }
+                                    if(fit==0){
+                                        printf("Colocando fit Aleatorio...\n");
+                                        strcpy(nuevafuncion.fit,"wf");
+                                    }
+
+                                    if((add==1 && delete_==1)||(add==2 && delete_==2)||(add==1 && delete_==2)||(add==2 && delete_==1))
+                                    {
+                                        printf("\n\nInterprete #_ ERROR_3.2: Parametros 'fdisk' Invalidos(add y delete estan juntos)\n\n");
+                                        ErrorComando++;
+                                    }else if(add==2 && delete_==0){//---------AUMENTAR TAMAÑO
+                                        printf("Reducir o Aumentar...\n");
+                                        //------------------------------------------------------Reducir o Aumentar
+                                        limpiarvar(instruccion,100);
+                                    }else if(add==0 && delete_==2){//_--------ELIMINAR PARTICION
+
+                                         if(nuevafuncion.type=='p' || nuevafuncion.type=='e'||nuevafuncion.type=='P' || nuevafuncion.type=='E')
+                                        {
+
+                                            int opcion;
+                                            printf("%s\n", "(!)-¿Desea eliminar esta Particion?");
+                                            printf("%s\n", "1-Si");
+                                            printf("%s\n", "2-no");
+
+                                            printf("%s\n", "");
+                                            printf(">>>>:~$ ");
+                                            scanf("%d",&opcion);
+
+                                            if(opcion>0 && opcion<3){
+
+                                                switch(opcion)
+                                                {
+                                                case 1:
+                                                //-----------------------------------------------EliminarParticion(funcion);
+                                                printf("Eliminar Particion...\n");
+                                                //EliminarParticion(nuevafuncion);
+                                                limpiarvar(instruccion,100);
+                                                break;
+                                                case 2:
+                                                    printf("*******OPERACION CANCELADA*********\n");
+                                                break;
+                                                default:
+                                                    printf("Error FATAL \n");
+                                                break;
+                                                }
+                                            }else
+                                            {
+                                                opcion=1;
+                                                printf(" \n");
+                                                printf("%s\n", ">>>> Error De Seleccion <<<< ");
+                                            }
+
+                                        }
+                                        else
+                                        {
+                                            //--------------------------------------------------EliminarParticionLogica(funcion);
+                                            printf("Eliminar Particion Logica...\n");
+                                            limpiarvar(instruccion,100);
+                                        }
+
+                                    }else if (add==0 && delete_==0 && size==1){//---Crear Particion
+
+                                        if(nuevafuncion.type=='p' ||  nuevafuncion.type=='e'||nuevafuncion.type=='P' ||  nuevafuncion.type=='E')
+                                        {
+                                            printf("Creando Particion...\n\n");
+                                            //--------------------------------------------------CrearParticion(nuevafuncion);
+                                            //CrearParticion(nuevafuncion);
+                                            limpiarvar(instruccion,100);
+
+                                        }
+                                        else
+                                        {
+                                             printf("Creando Particion Logican...\n");
+                                            //--------------------------------------------------CrearParticionLogica(nuevafuncion);
+                                             //CrearParticionLogica2(nuevafuncion);
+                                             limpiarvar(instruccion,100);
+
+                                        }
+
+                                    }else{
+                                        printf("\n\nInterprete #_ ERROR_3.3: Parametros 'fdisk' Invalidos(*)\n\n");
+                                        ErrorComando++;
+
+                                    }
+
+
+                                }else{
+                                    printf("\n\nInterprete #_ ERROR_3.2: Parametros Obligatorios del 'fdisk'\n\n");
+                                    ErrorComando++;
+                                }
+
+                            }//fin del fdisk
+
                             else{
                                 //printf("\n\nInterprete #_ ERROR_3.0: ERROR EN EL COMANDO Invalido\n\n");
                                 //ErrorComando++;
@@ -864,7 +1109,8 @@ void Interprete(char entrada[])
                     }
             }
 
-        }else{ //--------------------------------------SEGUIR AVANZANDO LA CADENA
+        }//FIN SALTO DE LINEA
+        else{ //--------------------------------------SEGUIR AVANZANDO LA CADENA
             contador++;
         }
 
@@ -953,7 +1199,7 @@ if(ErrorInterprete==0 && fin==0){
             limpiarvar(instruccion,100);
         }//fin del mkdisk
         else if(!strcmp(instruccion,"rmdisk")){//*******************************rmdisk
-
+            ContadorInstrucciones++;
             if(path==1&&numeroparametros==1){
             int opcion;
             printf("%s\n", "(!)-¿Desea eliminar este Disco?");
@@ -996,6 +1242,114 @@ if(ErrorInterprete==0 && fin==0){
             ErrorComando++;
         }
         }//fin del rmdisk
+        else if(!strcmp(instruccion,"fdisk")){//--------------------------------fdisk
+
+            printf("\n-----------------------------------------------------------------------\n");
+            printf("/******************Ejecutando COMANDO...****************************/\n");
+            printf("-----------------------------------------------------------------------\n\n");
+
+            ContadorInstrucciones++;
+            if(path==1 && name==1)
+            {
+                if(unit==0){
+                    printf("Colocando unit Aleatoria...\n");
+                    nuevafuncion.unit='k';
+                }
+                if(type==0){
+                    printf("Colocando type Aleatorio...\n");
+                    nuevafuncion.type='p';
+                }
+                if(fit==0){
+                    printf("Colocando fit Aleatorio...\n");
+                    strcpy(nuevafuncion.fit,"wf");
+                }
+
+                if((add==1 && delete_==1)||(add==2 && delete_==2)||(add==1 && delete_==2)||(add==2 && delete_==1))
+                {
+                    printf("\n\nInterprete #_ ERROR_3.2: Parametros 'fdisk' Invalidos(add y delete estan juntos)\n\n");
+                    ErrorComando++;
+                }else if(add==2 && delete_==0){//---------AUMENTAR TAMAÑO
+                    printf("Reducir o Aumentar...\n");
+                    //------------------------------------------------------Reducir o Aumentar
+                    limpiarvar(instruccion,100);
+                }else if(add==0 && delete_==2){//_--------ELIMINAR PARTICION
+
+                     if(nuevafuncion.type=='p' || nuevafuncion.type=='e'||nuevafuncion.type=='P' || nuevafuncion.type=='E')
+                    {
+
+                        int opcion;
+                        printf("%s\n", "(!)-¿Desea eliminar esta Particion?");
+                        printf("%s\n", "1-Si");
+                        printf("%s\n", "2-no");
+
+                        printf("%s\n", "");
+                        printf(">>>>:~$ ");
+                        scanf("%d",&opcion);
+
+                        if(opcion>0 && opcion<3){
+
+                            switch(opcion)
+                            {
+                            case 1:
+                            //-----------------------------------------------EliminarParticion(funcion);
+                            printf("Eliminar Particion...\n");
+                            //EliminarParticion(nuevafuncion);
+                            limpiarvar(instruccion,100);
+                            break;
+                            case 2:
+                                printf("*******OPERACION CANCELADA*********\n");
+                            break;
+                            default:
+                                printf("Error FATAL \n");
+                            break;
+                            }
+                        }else
+                        {
+                            opcion=1;
+                            printf(" \n");
+                            printf("%s\n", ">>>> Error De Seleccion <<<< ");
+                        }
+
+                    }
+                    else
+                    {
+                        //--------------------------------------------------EliminarParticionLogica(funcion);
+                        printf("Eliminar Particion Logica...\n");
+                        limpiarvar(instruccion,100);
+                    }
+
+                }else if (add==0 && delete_==0 && size==1){//---Crear Particion
+
+                    if(nuevafuncion.type=='p' ||  nuevafuncion.type=='e'||nuevafuncion.type=='P' ||  nuevafuncion.type=='E')
+                    {
+                        printf("Creando Particion...\n\n");
+                        //--------------------------------------------------CrearParticion(nuevafuncion);
+                        //CrearParticion(nuevafuncion);
+                        limpiarvar(instruccion,100);
+
+                    }
+                    else
+                    {
+                         printf("Creando Particion Logican...\n");
+                        //--------------------------------------------------CrearParticionLogica(nuevafuncion);
+                         //CrearParticionLogica2(nuevafuncion);
+                         limpiarvar(instruccion,100);
+
+                    }
+
+                }else{
+                    printf("\n\nInterprete #_ ERROR_3.3: Parametros 'fdisk' Invalidos(*)\n\n");
+                    ErrorComando++;
+
+                }
+
+
+            }else{
+                printf("\n\nInterprete #_ ERROR_3.2: Parametros Obligatorios del 'fdisk'\n\n");
+                ErrorComando++;
+            }
+
+        }//fin del fdisk
         else{
             //printf("\n\nInterprete #_ ERROR_3.0: ERROR EN EL COMANDO Invalido\n\n");
             //ErrorComando++;
@@ -1203,6 +1557,7 @@ void CrearDisco(Funcion funcion)
             printf("********************************************************\n");
             ContadorComandosExitosos++;
 
+
         }
     }else{
         printf("\n Interprete #_ ERROR_2.5 ALCrear Disco La extencion No es Correcta \n\n");
@@ -1260,7 +1615,3 @@ void EliminarDisco(Funcion funcion){
     }
 
 }
-
-
-
-//exec -path::"/home/carlos/Escritorio/Entrada.h"
