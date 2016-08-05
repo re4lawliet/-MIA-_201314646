@@ -42,6 +42,7 @@ int ErrorComando=0;
 int ErrorCrearDisco=0;
 int ErrorEliminarDisco=0;
 int ErrorCrearParticionPrimaria=0;
+int ErrorEliminarParticionPrimaria=0;
 int ErrorT=0;
 
 
@@ -94,6 +95,16 @@ typedef struct
     int mbr_disk_signature;
     Particion particiones[4];
 }MbrDisco;
+
+typedef struct
+{
+    char part_status;
+    char part_fit;
+    int part_start;
+    int part_size;
+    int part_next;
+    char part_name[16];
+}EBR;
 
 
 /********************Area de Metodos Herramienta*******************************/
@@ -262,6 +273,7 @@ void menu_principal (){
         ErrorCrearDisco=0;
         ErrorEliminarDisco=0;
         ErrorCrearParticionPrimaria=0;
+        ErrorEliminarParticionPrimaria=0;
 
         ContadorInstrucciones=0;
         ContadorComandosExitosos=0;
@@ -291,7 +303,7 @@ void menu_principal (){
                 //fgets(comando,100,stdin);
                 //LeerComando(comando);
 
-                ErrorT=ErrorComando+ErrorInterprete+ErrorCrearDisco;
+                ErrorT=ErrorComando+ErrorInterprete+ErrorCrearDisco+ErrorEliminarDisco+ErrorCrearParticionPrimaria;
                 printf("\n");
                 printf("|---------------------------------|\n");
                 printf("|(*)Errores Generales:   '%i'      |\n",ErrorT);
@@ -300,6 +312,7 @@ void menu_principal (){
                 printf("|-Errores CrearDisco:    '%i'      |\n",ErrorCrearDisco);
                 printf("|-Errores EliminarDisco: '%i'      |\n",ErrorEliminarDisco);
                 printf("|-Errores CrearPartPrim: '%i'      |\n",ErrorCrearParticionPrimaria);
+                printf("|-Errores ElimPartPrim:  '%i'      |\n",ErrorEliminarParticionPrimaria);
                 printf("|                                 |\n");
                 printf("|+Instrucciones Ejetutadas:  '%i'  |\n",ContadorInstrucciones);
                 printf("|+Instrucciones Exitosas  :  '%i'  |\n",ContadorComandosExitosos);
@@ -311,6 +324,7 @@ void menu_principal (){
                 ErrorCrearDisco=0;
                 ErrorEliminarDisco=0;
                 ErrorCrearParticionPrimaria=0;
+                ErrorEliminarParticionPrimaria=0;
 
                 ContadorInstrucciones=0;
                 ContadorComandosExitosos=0;
@@ -1035,7 +1049,7 @@ void Interprete(char entrada[])
                                                 case 1:
                                                 //-----------------------------------------------EliminarParticion(funcion);
                                                 printf("Eliminar Particion...\n");
-                                                //EliminarParticion(nuevafuncion);
+                                                EliminarParticion(nuevafuncion);
                                                 limpiarvar(instruccion,100);
                                                 break;
                                                 case 2:
@@ -1066,7 +1080,7 @@ void Interprete(char entrada[])
                                         {
                                             printf("Creando Particion...\n\n");
                                             //--------------------------------------------------CrearParticion(nuevafuncion);
-                                            //CrearParticion(nuevafuncion);
+                                            CrearParticion(nuevafuncion);
                                             limpiarvar(instruccion,100);
 
                                         }
@@ -1293,7 +1307,7 @@ if(ErrorInterprete==0 && fin==0){
                             case 1:
                             //-----------------------------------------------EliminarParticion(funcion);
                             printf("Eliminar Particion...\n");
-                            //EliminarParticion(nuevafuncion);
+                            EliminarParticion(nuevafuncion);
                             limpiarvar(instruccion,100);
                             break;
                             case 2:
@@ -1324,7 +1338,7 @@ if(ErrorInterprete==0 && fin==0){
                     {
                         printf("Creando Particion...\n\n");
                         //--------------------------------------------------CrearParticion(nuevafuncion);
-                        //CrearParticion(nuevafuncion);
+                        CrearParticion(nuevafuncion);
                         limpiarvar(instruccion,100);
 
                     }
@@ -1552,9 +1566,9 @@ void CrearDisco(Funcion funcion)
         {
             fwrite(&mbr, sizeof(MbrDisco), 1, file);
             fclose(file);
-            printf("********************************************************\n");
-            printf("---'DISCO CREADO CON EXITO'--- ^_^ '%s'\n\n",funcion.name);
-            printf("********************************************************\n");
+            printf("\n********************************************************\n");
+            printf("---'DISCO CREADO CON EXITO'--- ^_^ '%s'\n",funcion.name);
+            printf("\n********************************************************\n");
             ContadorComandosExitosos++;
 
 
@@ -1598,9 +1612,9 @@ void EliminarDisco(Funcion funcion){
         fclose(fichero);
         if(remove(funcion.path) == 0) {
 
-            printf("************************************************************");
-            printf( "---'DISCO ELIMINADO CON EXITO'--%s :S\n\n",funcion.path );
-            printf("************************************************************");
+            printf("\n************************************************************\n");
+            printf( "---'DISCO ELIMINADO CON EXITO'--%s :S\n",funcion.path );
+            printf("\n************************************************************\n");
             ContadorComandosExitosos++;
         }
         else{
@@ -1615,3 +1629,449 @@ void EliminarDisco(Funcion funcion){
     }
 
 }
+
+void CrearParticion(Funcion funcion)
+{
+    //******************* Quita "comillas" en la path **************************
+    char pathauxiliar[100];
+    strcpy(pathauxiliar,funcion.path);
+
+    char finalizado[100];
+    strcpy(finalizado,"cd /\n");
+    if(pathauxiliar[0]=='\"')
+    {
+        limpiarvar(funcion.path,100);
+        int q=1;
+        while(pathauxiliar[q]!='\"')
+        {
+            char c2[1];
+            c2[0]=pathauxiliar[q];
+            strncat(funcion.path,c2,1);
+            q++;
+        }
+
+    }
+    //**************************************************************************
+
+    int nombresiguales=0;
+    int numeroprimarias=0;
+    int numeroextendida=0;
+
+    int TempPrimarias=0;
+    int TempExt=0;
+
+    // *************************INICIO DE CREACION******************************
+    FILE* file2= fopen(funcion.path, "rb+");
+
+    if (file2==NULL){ //si no existe el archivo
+            printf("\n Interprete #_ ERROR_3.7 Al tratar de Acceder al Archivo \n\n");
+            ErrorCrearParticionPrimaria++;
+            //Aqui Va el Error Crear PArticion Logica
+    }else{//si existe
+        //-------------------------LECTURA DEL ARCHIVO--------------------------
+        MbrDisco mbr2;
+        fseek(file2,0,SEEK_SET);
+        fread(&mbr2, sizeof(MbrDisco), 1, file2);
+        //------------------------IMPRIMIR DATOS DEL DISCO----------------------
+        printf("-----------CrearParticion Datos Del Disco--------------------\n");
+        printf("%i",mbr2.mbr_disk_signature);
+        printf("\n");
+        printf(mbr2.mbr_fecha_creacion);
+        printf("\n");
+        printf("Tamaño %i",mbr2.mbr_tamano);
+        printf("-----------INICIALMENTE Primarias----------------------------\n");
+
+        //------------------------Recorrido De PArticiones----------------------
+        int z=0;
+        for(z=0;z<4;z++){ //recorre el arreglo de particiones primarias
+            int k=0;
+            int l=0;
+            while(funcion.name[k]!=NULL){
+            if(mbr2.particiones[z].part_name[k]==funcion.name[k]){
+                l++;
+            }
+                k++;
+            }
+            if(l==k && mbr2.particiones[z].part_status!='0'){// si las coincidencias son iguales y el status 0
+                nombresiguales=1;
+                printf("\n Interprete #_ ERROR_3.8* Pariciones iguales  %i \n\n",nombresiguales);
+                ErrorCrearParticionPrimaria++;
+            }
+            printf("Bit Inicial: %i \n",mbr2.particiones[z].part_start);
+            printf("Nombre: %s \n",mbr2.particiones[z].part_name);
+            printf("Tipo Estado: %c \n",mbr2.particiones[z].part_status);
+            printf("Tipo Particion: %c \n",mbr2.particiones[z].part_type);
+            printf("---------------------------------------------------------\n");
+
+            if(mbr2.particiones[z].part_type=='p'||mbr2.particiones[z].part_type=='P')//si el tipo es primaria
+            {
+                numeroprimarias++;
+            }
+            if(mbr2.particiones[z].part_type=='e'||mbr2.particiones[z].part_type=='E')//si el tipo es extendida
+            {
+                printf("------------INICIALMENTE EXTENDIDAS---------------------\n");
+                numeroextendida++;
+                EBR mostrar;
+                fseek(file2,mbr2.particiones[z].part_start,SEEK_SET); //escribir el bit ebr inicial
+                fread(&mostrar, sizeof(EBR), 1, file2);
+                printf("Inicio EBR: %i \n",mostrar.part_start);
+                printf("Siguiente ebr: %i \n",mostrar.part_next);
+                printf("Estado ebr: %c \n",mostrar.part_status);
+            }
+                printf("Tipo De Ajuste: %c \n",mbr2.particiones[z].part_fit);
+                printf("Tamaño Particion %i \n", mbr2.particiones[z].part_size);
+        }//fin de Recorrido de PArticiones
+        printf("---------------------------------------------------------\n");
+        printf("****A*****Numero de Particiones primarias: %i \n",numeroprimarias);
+        printf("****A*****Numero de PArticiones extendidas: %i \n",numeroextendida);
+        printf("---------------------------------------------------------\n");
+
+        //---------------INICIO DE CREACION DE PARTICION------------------------
+        TempPrimarias=numeroprimarias;
+        TempExt=numeroextendida;
+        int tamanoparticion=0;
+
+         if(funcion.unit=='b'||funcion.unit=='B') //tamaño en bytes
+        {
+            tamanoparticion=funcion.size;
+        }
+        else if(funcion.unit=='k'||funcion.unit=='K')// tamaño en kilobytes
+        {
+            tamanoparticion=(funcion.size*1024);
+        }
+        else
+        {
+            tamanoparticion=funcion.size*(1024*1024);
+        }
+        printf("Tamaño de Particion a Crear: %i \n",tamanoparticion);
+
+        int vacio=1;
+        int i=0;
+        int numeroparticion=0;
+        int inicio=sizeof(MbrDisco);
+        int fin=inicio+tamanoparticion;
+        int ebractivo=0;
+        EBR primerebr;
+
+        if(funcion.type=='p'||funcion.type=='P'){// primaria
+            numeroprimarias++;
+        }
+        else if(funcion.type=='e'||funcion.unit=='E'){// extendida
+            numeroextendida++;
+            ebractivo=1;
+        }
+
+        if(nombresiguales>0){//si el nombre existe
+            printf("\n Interprete #_ ERROR_3.9 Nombre del Disco ya Existente \n\n");
+            ErrorCrearParticionPrimaria++;
+            ebractivo=0;
+        }
+        else// si no existe la crea
+        {
+            if(numeroextendida<=1 && numeroprimarias<=3 && (numeroextendida+numeroprimarias)<=4){
+                if(tamanoparticion>mbr2.mbr_tamano){//tamaño de la particion menor q el mbr
+                    ebractivo=0;
+                    printf("\n Interprete #_ ERROR_4.0 El Tamaño de la Particion es Mayor q el Discos \n\n");
+                    ErrorCrearParticionPrimaria++;
+                }else{//si el tamaño es correcto
+
+                    for(i=0;i<4;i++)
+                    {
+                        if(mbr2.particiones[i].part_type=='e'||mbr2.particiones[i].part_type=='E'){
+                            ebractivo=0;
+                        }
+                        if(mbr2.particiones[i].part_start!=-1 && mbr2.particiones[i].part_status!='0'){//si el estatus es 0 y inicio -1
+                            vacio=0;
+                            if(fin<=mbr2.particiones[i].part_start)//si el final de la part es menor q el inicio de la actual
+                            {
+                                break;
+                            }
+                            else//delocontrario crea el nuevo inicio
+                            {
+                                inicio=mbr2.particiones[i].part_start+mbr2.particiones[i].part_size;
+                                fin=inicio+tamanoparticion;
+                                numeroparticion=i+1;
+                            }
+                        }//fin si el estatus es 0 y inicio -1
+                    }//fin de for q recorre arreglo de particiones
+
+
+                    if(vacio==1 && fin<=mbr2.mbr_tamano && numeroparticion<4){
+                        printf("1) Disco Vacio...\n"); //era error 505 corregido
+                        //ErrorT++;
+                        mbr2.particiones[numeroparticion].part_start=sizeof(MbrDisco);
+                        int k=0;
+                        int l=0;
+                        if(ebractivo==1){
+                            primerebr.part_status='0';
+                            primerebr.part_next=-1;
+                            primerebr.part_start=-1;
+                        }
+
+                        while(funcion.name[k]!=NULL)// wile q compara el nombre de la particion
+                        {
+                            mbr2.particiones[numeroparticion].part_name[l++]=funcion.name[k];
+                            k++;
+                        }
+                        mbr2.particiones[numeroparticion].part_size=tamanoparticion;
+                        mbr2.particiones[numeroparticion].part_fit=funcion.fit[0];
+                        mbr2.particiones[numeroparticion].part_status='1';
+                        mbr2.particiones[numeroparticion].part_type=funcion.type;
+                        mbr2.particiones[numeroparticion].formateada='0';
+
+                        printf("\n********************************************************\n");
+                        printf("---'Particion Creada Con EXITO'--- ^_^ '%s'\n",funcion.name);
+                        printf("\n********************************************************\n");
+                        ContadorComandosExitosos++;
+                        printf("Guardado...\n");
+                    }//si el disco esta vacio inicialmente
+                    else if(vacio==0 && fin<=mbr2.mbr_tamano && numeroparticion<4)//el disco tiene porlomenos una particion
+                    {
+                        printf("2) Disco tiene por lo menos una particion...\n");
+
+                        if(mbr2.particiones[numeroparticion].part_start!=1 && mbr2.particiones[numeroparticion].part_status!='0'){
+                            int s=0;
+                            for(s=3;s>numeroparticion;s--){
+                                printf("actual: %s \n",mbr2.particiones[s].part_name);
+                                printf("siguiente: %s \n",mbr2.particiones[s].part_name);
+                                mbr2.particiones[s]=mbr2.particiones[(s-1)];
+                            }
+                        }//recorre las particiones actuales
+
+                        mbr2.particiones[numeroparticion].part_start=inicio;
+                        int k=0;
+                        int l=0;
+                        if(ebractivo==1){
+                            primerebr.part_status='0';
+                            primerebr.part_next=-1;
+                            primerebr.part_start=-1;
+                            primerebr.part_size=0;
+                        }
+
+                        for(k=0;k<16;k++)
+                        {
+                            mbr2.particiones[numeroparticion].part_name[l++]=funcion.name[k];
+                        }
+                        mbr2.particiones[numeroparticion].part_size=tamanoparticion;
+                        mbr2.particiones[numeroparticion].part_fit=funcion.fit[0];
+                        mbr2.particiones[numeroparticion].part_status='1';
+                        mbr2.particiones[numeroparticion].part_type=funcion.type;
+                        mbr2.particiones[numeroparticion].formateada='0';
+
+                        printf("\n********************************************************\n");
+                        printf("---'Particion Creada Con EXITO'--- ^_^ '%s'\n",funcion.name);
+                        printf("\n********************************************************\n");
+                        ContadorComandosExitosos++;
+                        printf("Guardado...\n");
+
+                    }//fin el disco tiene porlomenos una particion
+                    else
+                    {
+                        printf("\n Interprete #_ ERROR_4.1 No Hay espacio PAra La PArticion \n\n");
+                        ErrorCrearParticionPrimaria++;
+                        ebractivo=0;
+                    }
+
+                }//fin si el tamaño es correcto
+
+
+            }//sinumeroExtendidas menor q 1 y primarias menor q 3 y primarias menor q 4
+            else{
+                ebractivo=0;
+                printf("\n Interprete #_ ERROR_4.2 No se Puede Crear debido al Numero de Particiones Extendidas y Primarias \n\n");
+                ErrorCrearParticionPrimaria++;
+            }
+        }//si existe nombre
+
+        if(ebractivo==1){
+            fseek(file2,mbr2.particiones[numeroparticion].part_start,SEEK_SET);
+            fwrite(&primerebr, sizeof(EBR), 1, file2);
+            printf("\n EBR Guardado :v \n\n");
+        }
+
+        fseek(file2,0,SEEK_SET);
+        fwrite(&mbr2, sizeof(MbrDisco), 1, file2);
+        fseek(file2,0,SEEK_SET);
+        fread(&mbr2, sizeof(MbrDisco), 1, file2);
+
+        z=0;
+        for(z=0;z<4;z++){
+
+            printf("bit inicial: %i ",mbr2.particiones[z].part_start);
+            printf("nombre: %s ",mbr2.particiones[z].part_name);
+            printf("tipo estado: %c ",mbr2.particiones[z].part_status);
+            printf("tipo particion: %c\n",mbr2.particiones[z].part_type);
+            if(mbr2.particiones[z].part_type=='e')
+            {
+                EBR mostrar;
+                fseek(file2,mbr2.particiones[z].part_start,SEEK_SET);
+                fread(&mostrar, sizeof(EBR), 1, file2);
+                printf("inicio ebr: %i \n",mostrar.part_start);
+                printf("siguiente ebr: %i \n",mostrar.part_next);
+                printf("estado ebr: %c \n",mostrar.part_status);
+                printf("tamaño ebr: %i \n",mostrar.part_size);
+            }
+        }
+
+        printf("\n\n|***********REPORTE ANTES DE LA OPERACION****************|\n");
+        printf("Numero de particiones primarias= %i                          |\n ",TempPrimarias);
+        printf("Numero de particiones extendidas= %i                         |\n",TempExt);
+
+        printf("\n *****PArticionado Finalizado ******                       |\n");
+        printf("Numero de particiones primarias= %i                          |\n",numeroprimarias);
+        printf("Numero de particiones extendidas= %i                         |\n",numeroextendida);
+        printf("|************************************************************|\n");
+        fclose(file2);
+
+    }//siexiste el archivo
+
+}
+
+void EliminarParticion(Funcion funcion)
+{
+    ErrorEliminarParticionPrimaria=0;
+    int numeroprimarias=0;
+    int numeroextendida=0;
+    int nombresiguales=0;
+
+    //******************* Quita "comillas" en la path **************************
+    char pathauxiliar[100];
+    strcpy(pathauxiliar,funcion.path);
+
+    char finalizado[100];
+    strcpy(finalizado,"cd /\n");
+    if(pathauxiliar[0]=='\"')
+    {
+        limpiarvar(funcion.path,100);
+        int q=1;
+        while(pathauxiliar[q]!='\"')
+        {
+            char c2[1];
+            c2[0]=pathauxiliar[q];
+            strncat(funcion.path,c2,1);
+            q++;
+        }
+
+    }
+  //**************************************************************************
+
+    int TempPrimarias=0;
+    int TempExt=0;
+    FILE* file2= fopen(funcion.path, "rb+");
+
+    if (file2==NULL){  //si no existe el archivo
+            printf("\n Interprete #_ ERROR_4.2 Al tratar de Acceder al Archivo \n\n");
+            ErrorEliminarParticionPrimaria++;
+
+    }else{//si existe
+
+        //Leer MBR XD
+        MbrDisco mbr2;
+        fseek(file2,0,SEEK_SET);
+        fread(&mbr2, sizeof(MbrDisco), 1, file2);
+        int partcionborrar=-1;
+
+        int z=0;
+        int k=0;
+        int l=0;
+        for(z=0;z<4;z++)
+        {
+
+            if(!strcmp(mbr2.particiones[z].part_name,funcion.name)){
+                partcionborrar=z;
+            }
+
+        }
+
+        if(partcionborrar>=0)//existe
+        {
+
+            if(!strcmp(funcion.delete_,"fast")||!strcmp(funcion.delete_,"FAST"))
+            {
+
+                    mbr2.particiones[partcionborrar].part_status='0';
+                    mbr2.particiones[partcionborrar].part_type='i'; //inactiva
+                    printf("****************particion borrada en modo fast: %s\n",funcion.name);
+
+            }//fin si es fast
+            else if(!strcmp(funcion.delete_,"full")||!strcmp(funcion.delete_,"FULL"))//si es en full
+            {
+
+                    int inicio=mbr2.particiones[partcionborrar].part_start;
+                    mbr2.particiones[partcionborrar].part_size=0;
+                    mbr2.particiones[partcionborrar].part_start=-1;
+                    int contador=0;
+                    for(contador=0;contador<16;contador++)
+                    {
+                        mbr2.particiones[partcionborrar].part_name[contador]='\0';
+                    }
+                    mbr2.particiones[partcionborrar].part_status='0';
+                    int ebrborrar=0;
+                    if(mbr2.particiones[partcionborrar].part_type=='e'||mbr2.particiones[partcionborrar].part_type=='E')
+                    {
+                        ebrborrar=1;
+                    }
+                    mbr2.particiones[partcionborrar].part_type='\0';
+                    mbr2.particiones[partcionborrar].part_fit='\0';
+                    printf("*******************particion borrada con exito Modo FUll: %s\n",funcion.name);
+
+            }//fin del modo fulls
+
+        }//fin de particion existe
+        else{
+
+            printf("\n ::::::::::::::::::La PArticion: '%s'  No existe en Las Primarias y Extendidas \n",funcion.name);
+
+
+
+        }//fin si no existe la primaria se va a logica
+
+        fseek(file2,0,SEEK_SET);
+        fwrite(&mbr2, sizeof(MbrDisco), 1, file2);
+        fclose(file2);
+
+    }//fin si existe el archivo
+
+    MbrDisco mbr2;
+    fseek(file2,0,SEEK_SET);
+    fread(&mbr2, sizeof(MbrDisco), 1, file2);
+
+    int z=0;
+    for(z=0;z<4;z++){ //recorre el arreglo de particiones primarias
+        int k=0;
+        int l=0;
+        while(funcion.name[k]!=NULL){
+            if(mbr2.particiones[z].part_name[k]==funcion.name[k]){
+                l++;
+            }
+            k++;
+        }
+        if(l==k && mbr2.particiones[z].part_status!='0'){// si las coincidencias son iguales y el status 0
+            printf("-----EL ESTATUS ES 0");
+        }
+
+        if(mbr2.particiones[z].part_type=='p'||mbr2.particiones[z].part_type=='P')//si el tipo es primaria
+        {
+        numeroprimarias++;
+        }
+        if(mbr2.particiones[z].part_type=='e'||mbr2.particiones[z].part_type=='E')//si el tipo es extendida
+        {
+        numeroextendida++;
+        }
+
+    }//fin for de recorrer particiones
+
+
+    printf("\n\n *****Eliminado Finalizado ******\n\n");
+    printf("Numero de particiones primarias= %i\n",numeroprimarias);
+    printf("Numero de particiones extendidas= %i\n\n",numeroextendida);
+    printf("**ERRORES ENCONTRADOS::::::: %i\n",ErrorEliminarParticionPrimaria);
+
+
+}
+
+
+
+
+
+//exec -path::"/home/carlos/Escritorio/Entrada.h"
