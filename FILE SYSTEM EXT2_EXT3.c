@@ -43,6 +43,7 @@ int ErrorCrearDisco=0;
 int ErrorEliminarDisco=0;
 int ErrorCrearParticionPrimaria=0;
 int ErrorEliminarParticionPrimaria=0;
+int ErrorCrearParticionLogica=0;
 int ErrorT=0;
 
 
@@ -274,6 +275,7 @@ void menu_principal (){
         ErrorEliminarDisco=0;
         ErrorCrearParticionPrimaria=0;
         ErrorEliminarParticionPrimaria=0;
+        ErrorCrearParticionLogica=0;
 
         ContadorInstrucciones=0;
         ContadorComandosExitosos=0;
@@ -312,6 +314,7 @@ void menu_principal (){
                 printf("|-Errores CrearDisco:    '%i'      |\n",ErrorCrearDisco);
                 printf("|-Errores EliminarDisco: '%i'      |\n",ErrorEliminarDisco);
                 printf("|-Errores CrearPartPrim: '%i'      |\n",ErrorCrearParticionPrimaria);
+                printf("|-Errores CrearPartLog:  '%i'      |\n",ErrorCrearParticionLogica);
                 printf("|-Errores ElimPartPrim:  '%i'      |\n",ErrorEliminarParticionPrimaria);
                 printf("|                                 |\n");
                 printf("|+Instrucciones Ejetutadas:  '%i'  |\n",ContadorInstrucciones);
@@ -325,6 +328,7 @@ void menu_principal (){
                 ErrorEliminarDisco=0;
                 ErrorCrearParticionPrimaria=0;
                 ErrorEliminarParticionPrimaria=0;
+                ErrorCrearParticionLogica=0;
 
                 ContadorInstrucciones=0;
                 ContadorComandosExitosos=0;
@@ -1088,7 +1092,7 @@ void Interprete(char entrada[])
                                         {
                                              printf("Creando Particion Logican...\n");
                                             //--------------------------------------------------CrearParticionLogica(nuevafuncion);
-                                             //CrearParticionLogica2(nuevafuncion);
+                                             CrearParticionLogica(nuevafuncion);
                                              limpiarvar(instruccion,100);
 
                                         }
@@ -1346,7 +1350,7 @@ if(ErrorInterprete==0 && fin==0){
                     {
                          printf("Creando Particion Logican...\n");
                         //--------------------------------------------------CrearParticionLogica(nuevafuncion);
-                         //CrearParticionLogica2(nuevafuncion);
+                         CrearParticionLogica(nuevafuncion);
                          limpiarvar(instruccion,100);
 
                     }
@@ -1756,7 +1760,7 @@ void CrearParticion(Funcion funcion)
         if(funcion.type=='p'||funcion.type=='P'){// primaria
             numeroprimarias++;
         }
-        else if(funcion.type=='e'||funcion.unit=='E'){// extendida
+        else if(funcion.type=='e'||funcion.type=='E'){// extendida
             numeroextendida++;
             ebractivo=1;
         }
@@ -1886,6 +1890,7 @@ void CrearParticion(Funcion funcion)
         if(ebractivo==1){
             fseek(file2,mbr2.particiones[numeroparticion].part_start,SEEK_SET);
             fwrite(&primerebr, sizeof(EBR), 1, file2);
+
             printf("\n EBR Guardado :v \n\n");
         }
 
@@ -1992,6 +1997,7 @@ void EliminarParticion(Funcion funcion)
                     mbr2.particiones[partcionborrar].part_status='0';
                     mbr2.particiones[partcionborrar].part_type='i'; //inactiva
                     printf("****************particion borrada en modo fast: %s\n",funcion.name);
+                    ContadorComandosExitosos++;
 
             }//fin si es fast
             else if(!strcmp(funcion.delete_,"full")||!strcmp(funcion.delete_,"FULL"))//si es en full
@@ -2014,6 +2020,7 @@ void EliminarParticion(Funcion funcion)
                     mbr2.particiones[partcionborrar].part_type='\0';
                     mbr2.particiones[partcionborrar].part_fit='\0';
                     printf("*******************particion borrada con exito Modo FUll: %s\n",funcion.name);
+                    ContadorComandosExitosos++;
 
             }//fin del modo fulls
 
@@ -2032,9 +2039,11 @@ void EliminarParticion(Funcion funcion)
 
     }//fin si existe el archivo
 
+    file2= fopen(funcion.path, "rb+");
     MbrDisco mbr2;
     fseek(file2,0,SEEK_SET);
     fread(&mbr2, sizeof(MbrDisco), 1, file2);
+    fclose(file2);
 
     int z=0;
     for(z=0;z<4;z++){ //recorre el arreglo de particiones primarias
@@ -2070,6 +2079,456 @@ void EliminarParticion(Funcion funcion)
 
 }
 
+void CrearParticionLogica(Funcion funcion){
+
+    Funcion funcionaux=funcion;
+
+    int nombresiguales=0;
+    int numeroextendida=0;
+    int idextendida=-1;
+    int tamanooextendida=0;
+    int inicio=-1; int fin=-1;
+    char*nombreextendida;
+    int contador=0;
+
+
+    //arregla el path del archivo para encontrarlo
+    //******************* Quita "comillas" en la path **************************
+    char pathauxiliar[100];
+    strcpy(pathauxiliar,funcion.path);
+
+    char finalizado[100];
+    strcpy(finalizado,"cd /\n");
+    if(pathauxiliar[0]=='\"')
+    {
+        limpiarvar(funcion.path,100);
+        int q=1;
+        while(pathauxiliar[q]!='\"')
+        {
+            char c2[1];
+            c2[0]=pathauxiliar[q];
+            strncat(funcion.path,c2,1);
+            q++;
+        }
+
+    }
+  //**************************************************************************
+
+    int existe=ExisteLogica(funcionaux.name,funcion);
+    printf("EXISTENCIA**************************************************************  %i \n",existe);
+
+    if(existe==0){
+
+        FILE* file2= fopen(funcion.path, "rb+");
+        if (file2==NULL)
+        {
+            printf("\n Interprete #_ ERROR_4.5: Al tratar de Acceder al Archivo \n\n\n");
+            ErrorCrearParticionLogica++;
+
+        }
+        else
+        {
+            MbrDisco mbr2;
+            fseek(file2,0,SEEK_SET);
+            fread(&mbr2, sizeof(MbrDisco), 1, file2);
+            int z;
+            for(z=0;z<4;z++)
+            {
+                if(!strcmp(mbr2.particiones[z].part_name,funcion.name)&& mbr2.particiones[z].part_status!='0'){
+                    nombresiguales=1;
+                    printf("\n Interprete #_ ERROR_4.6 Particiones Iguales \n\n %i \n",nombresiguales);
+                    ErrorCrearParticionLogica++;
+                }
+                if(mbr2.particiones[z].part_type=='e'||mbr2.particiones[z].part_type=='E')
+                {
+                    numeroextendida++;
+                    idextendida=z;
+                    tamanooextendida=mbr2.particiones[z].part_size;
+                    nombreextendida=mbr2.particiones[z].part_name;
+                }
+
+            }//fin del for de recorrido de particiones
+             if(nombresiguales>0){
+                printf("\n Interprete #_ ERROR_4.7 Nombre de la PArticion ya Existente \n\n %s \n",funcion.name);
+                ErrorCrearParticionLogica++;
+            }
+            else{
+
+                 printf("particion logiaca a crear= %s \n",funcion.name);
+                printf("****particion Extendida donde se Crea= %s \n",nombreextendida);
+                printf("tamaño de particion extendida= %i \n",tamanooextendida);
+                printf("id particion = %i \n",idextendida);
+                printf("tamaño ebr: %i \n",sizeof(EBR));
+                int tamanoparticion=0;
+                if(funcion.unit=='b'||funcion.unit=='B')
+                {
+                    tamanoparticion=funcion.size;
+                }
+                else if(funcion.unit=='k'||funcion.unit=='K')
+                {
+                    tamanoparticion=(funcion.size*1024);
+                }
+                else
+                {
+                    tamanoparticion=funcion.size*(1024*1024);
+                }
+                printf("tamaño particion: %i \n",tamanoparticion);
+                int vacio=1;
+                EBR ebr;
+                int actual=mbr2.particiones[idextendida].part_start;
+                printf("posicion actual %i\n",actual);
+                fseek(file2,actual,SEEK_SET);
+                fread(&ebr, sizeof(EBR), 1, file2);
+                int next=ebr.part_next;
+                inicio=sizeof(EBR);
+                int fin=inicio+tamanoparticion;
+                int numeroebr=0;
+                int espaciolibre=mbr2.particiones[idextendida].part_size;
+                espaciolibre-=32;
+
+                do{
+                if(ebr.part_next!=-1){
+                    actual+=sizeof(EBR);
+                    actual+=ebr.part_size;
+                    printf("posicion actual %i\n",actual);
+                    fseek(file2,actual,SEEK_SET);
+                    fread(&ebr, sizeof(EBR), 1, file2);
+                    next=ebr.part_next;
+                    contador++;
+                }
+                contador++;
+                }while(next!=-1);
+
+                //la posicion es el numero de ebr mas 1
+                EBR indices[contador+1];
+                contador=0;//reinica contador
+                actual=mbr2.particiones[idextendida].part_start;//coloca como el actual el inicio del ebr denuevo
+                fseek(file2,actual,SEEK_SET);//lee la primera ebr
+                fread(&indices[contador], sizeof(EBR), 1, file2);//lee las particiones de espacio no las ebr
+
+                do{
+                printf("viejo------------------------------------------------------------\n");
+                printf("fit %c\n",indices[contador].part_fit);
+                printf("name %s\n",indices[contador].part_name);
+                printf("next %i\n",indices[contador].part_next);
+                printf("size %i\n",indices[contador].part_size);
+                printf("inicio %i\n",indices[contador].part_start);
+                printf("estado %c\n",indices[contador].part_status);
+                printf("------------------------------------------------------------\n");
+                if(indices[contador].part_next!=-1){
+                    printf("contador %i\n",contador);
+                    actual+=sizeof(EBR);
+                    actual+=indices[contador].part_size;
+                    printf("posicion actual %i\n",actual);
+                    fseek(file2,actual,SEEK_SET);
+                    fread(&indices[contador+1], sizeof(EBR), 1, file2);
+                    next=indices[contador].part_next;
+                    printf("siguiente %i\n",next);
+                }else{
+                    printf("contador %i\n",contador);
+                    next=-1;
+                }
+                    contador++;
+                }while(next!=-1);
+
+
+                //el contador aun tiene el numero anterior de particiones
+
+                int i=0;
+                for(i=0;i<contador;i++){
+                    if(indices[i].part_start!=-1 ){//&& indices[i].part_status!='0' .-------------------Arreglo#1
+                        vacio=0;
+                        printf("mostrar part_name: %s\n",indices[i].part_name);
+                        if(fin<=(indices[i].part_start-sizeof(EBR))){
+                            break;//nunk entra
+                        }
+                        else
+                        {
+                            inicio=indices[i].part_start+indices[i].part_size+sizeof(EBR);
+                            fin=inicio+tamanoparticion;
+                            numeroebr=i+1;
+                        }
+                        if(i==0){
+                            espaciolibre=espaciolibre-indices[i].part_size;
+                        }else{
+                            espaciolibre=espaciolibre-indices[i].part_size-sizeof(EBR);
+                        }
+
+                    }
+                }//fin del for q recorre el inicio y fin
+
+                printf("**Total:::::: %i\n",contador);
+                printf("posicion %i\n",numeroebr);
+                printf("espacio libre %i\n",espaciolibre);
+                printf("inicio %i\n",inicio);
+                printf("final %i\n",fin);
+
+                if(fin<tamanooextendida){
+                    if(indices[numeroebr].part_start==-1){
+                        indices[numeroebr].part_start=inicio;
+                        int k=0;
+                        int l=0;
+                        for(k=0;k<16;k++)
+                        {
+                            indices[numeroebr].part_name[l++]=funcion.name[k];
+                        }
+                        //mbr2.particiones[numeroparticion].part_name=funcion.name;
+                        indices[numeroebr].part_size=tamanoparticion;
+                        indices[numeroebr].part_fit=funcion.fit[0];
+                        indices[numeroebr].part_status='1';
+                        indices[numeroebr].part_next=-1;
+                        printf("escribiendo....................\n");
+                        actual=mbr2.particiones[idextendida].part_start;
+                        fseek(file2,actual,SEEK_SET);
+                        fwrite(&indices[numeroebr], sizeof(EBR), 1, file2);
+                        printf("******Guardado...\n");
+                        ContadorComandosExitosos++;
+                        contador++;
+                    }else{
+                    int j=0;
+                    for(j=numeroebr;j<(contador+1);j++){//no entra
+                        if((j+1)<(contador+1)){
+                            indices[j+1]=indices[j];
+                        }
+                    }
+                    indices[numeroebr].part_start=inicio;
+                    int k=0;
+                    int l=0;
+                    for(k=0;k<16;k++)
+                    {
+                        indices[numeroebr].part_name[l++]=funcion.name[k];
+                    }
+                    //mbr2.particiones[numeroparticion].part_name=funcion.name;
+                    indices[numeroebr].part_size=tamanoparticion;
+                    indices[numeroebr].part_fit=funcion.fit[0];
+                    indices[numeroebr].part_status='1';
+                    indices[numeroebr].part_next=-1;
+                    if((numeroebr-1)>=0){
+                        indices[numeroebr-1].part_next=indices[numeroebr].part_start-sizeof(EBR); //claveee aqui manejan los registros
+
+
+                    }
+                    if((numeroebr+1)<(contador+1)){//no entra
+                        indices[numeroebr].part_next=indices[numeroebr+1].part_start-sizeof(EBR);
+                    }
+                    //printf("escribiendo....................\n");
+                    actual=mbr2.particiones[idextendida].part_start;
+                    int escribir=0;
+                    for(escribir=0;escribir<(contador+1);escribir++){
+                        printf("-----------------------nueva-------------------------------------\n");
+                        printf("fit %c\n",indices[escribir].part_fit);
+                        printf("name %s\n",indices[escribir].part_name);
+                        printf("next %i\n",indices[escribir].part_next);
+                        printf("size %i\n",indices[escribir].part_size);
+                        printf("inicio %i\n",indices[escribir].part_start);
+                        printf("estado %c\n",indices[escribir].part_status);
+                        printf("------------------------------------------------------------\n");
+                    printf("posicion actual %i\n",actual);
+                    fseek(file2,actual,SEEK_SET);
+                    fwrite(&indices[escribir], sizeof(EBR), 1, file2);
+                    actual+=sizeof(EBR);
+                    actual+=indices[escribir].part_size;
+                    }
+
+                    printf("******Guardado...\n");
+                    ContadorComandosExitosos++;
+                    contador++;
+                }
+            }else{
+                printf("\n Interprete #_ ERROR_4.8 No hay Espcio suficiente para el Particionado Logico \n\n");
+                ErrorCrearParticionLogica++;
+            }
+
+            }//fin del if q verifica nombres
+
+            fclose(file2);
+        }//fin del if del file
+
+
+        printf("\n\n *****PArticionado Logico Finalizado ******\n\n");
+        printf("Numero de particiones extendidas= %i\n\n",numeroextendida);
+        printf("Nombre de la Particion Extendida= %s\n\n",nombreextendida);
+        printf("Numero de particiones Logicas en La Extendida= %i\n\n",contador);
+        printf("**ERRORES ENCONTRADOS::::::: %i\n",ErrorCrearParticionLogica);
+
+    }else{//si la particion tiene el mismo nombre
+
+       printf("\n Interprete #_ ERROR_5.6 Este Nombre de PArticion YA Existe \n\n\n");
+       ErrorCrearParticionLogica++;
+
+    }
+
+}
+
+int ExisteLogica(char nombre[], Funcion funcion){//retorna 1 si ya esta la particion, y 0 si no existe
+
+    int aux=0;
+
+    int ErrorT=0;
+    int nombresiguales=0;
+    //int numeroprimarias=0;
+    int numeroextendida=0;
+    int idextendida=-1;
+    int tamanooextendida=0;
+    int inicio=-1; int fin=-1;
+    char*nombreextendida;
+    int contador=0;
+
+    //arregla el path del archivo para encontrarlo
+    //******************* Quita "comillas" en la path **************************
+    char pathauxiliar[100];
+    strcpy(pathauxiliar,funcion.path);
+
+    char finalizado[100];
+    strcpy(finalizado,"cd /\n");
+    if(pathauxiliar[0]=='\"')
+    {
+        limpiarvar(funcion.path,100);
+        int q=1;
+        while(pathauxiliar[q]!='\"')
+        {
+            char c2[1];
+            c2[0]=pathauxiliar[q];
+            strncat(funcion.path,c2,1);
+            q++;
+        }
+
+    }
+  //**************************************************************************
+
+
+
+    FILE* file2= fopen(funcion.path, "rb+");
+    if (file2==NULL)
+    {
+        printf("\n Interprete #_ ERROR5 Al tratar de Acceder al Archivo \n\n\n");
+        ErrorT++;
+    }
+    else
+    {
+        MbrDisco mbr2;
+        //printf("%d",ftell(file2));
+        fseek(file2,0,SEEK_SET);
+        fread(&mbr2, sizeof(MbrDisco), 1, file2);
+        int z;
+        int tamanoparticion=0;
+
+        for(z=0;z<4;z++)
+        {
+            int k=0,l=0;
+            while(funcion.name[k]!=NULL){
+                if(mbr2.particiones[z].part_name[k]==funcion.name[k]){
+                l++;
+                }
+                k++;
+            }
+
+            if(mbr2.particiones[z].part_type=='e'|| mbr2.particiones[z].part_type=='E')
+            {
+                numeroextendida++;
+                idextendida=z;
+                tamanooextendida=mbr2.particiones[z].part_size;
+                nombreextendida=mbr2.particiones[z].part_name;
+            }
+        }
+
+        if(nombresiguales>0){
+        printf("\n Interprete #_ ERROR21 Nombre de la PArticion ya Existente \n\n %s \n",funcion.name);
+        ErrorT++;
+        }
+        else{
+
+            int vacio=1;
+            EBR ebr;
+            int actual=mbr2.particiones[idextendida].part_start;
+            //printf("posicion actual %i\n",actual);
+            fseek(file2,actual,SEEK_SET);
+            fread(&ebr, sizeof(EBR), 1, file2);
+            int next=ebr.part_next;
+            inicio=sizeof(EBR);
+
+            int fin=inicio+tamanoparticion;
+            int contador=0;
+            int numeroebr=0;
+            int espaciolibre=mbr2.particiones[idextendida].part_size;
+            espaciolibre-=32;
+            do{
+                if(ebr.part_next!=-1){
+                    actual+=sizeof(EBR);
+                    actual+=ebr.part_size;
+                    //printf("posicion actual %i\n",actual);
+                    fseek(file2,actual,SEEK_SET);
+                    fread(&ebr, sizeof(EBR), 1, file2);
+                    next=ebr.part_next;
+                    contador++;
+                }
+                contador++;
+            }while(next!=-1);
+
+            printf("-----------------Lista de Particiones------------------------\n");
+
+            EBR indices[contador+1];
+            contador=0;
+            actual=mbr2.particiones[idextendida].part_start;
+            fseek(file2,actual,SEEK_SET);
+            fread(&indices[contador], sizeof(EBR), 1, file2);
+            do{
+
+                if(indices[contador].part_next!=-1){
+
+                    actual+=sizeof(EBR);
+                    actual+=indices[contador].part_size;
+                    fseek(file2,actual,SEEK_SET);
+                    fread(&indices[contador+1], sizeof(EBR), 1, file2);
+                    next=indices[contador].part_next;
+
+                }else{
+
+                    next=-1;
+                }
+                contador++;
+            }while(next!=-1);
+
+            char a[100];
+            int i=0;
+            for(i=0;i<contador;i++){
+                if(indices[i].part_start!=-1 ){//&& indices[i].part_status!='0'
+                vacio=0;
+
+                //a=indices[i].part_name;
+
+                if(strcasecmp(nombre,indices[i].part_name)==0 && indices[i].part_status!='0'){
+
+                    aux=1;
+                }
+
+
+                if(fin<=(indices[i].part_start-sizeof(EBR))){
+                    break;
+                }
+                else
+                {
+                    inicio=indices[i].part_start+indices[i].part_size+sizeof(EBR);
+                    fin=inicio+tamanoparticion;
+                    numeroebr=i+1;
+                }
+                if(i==0){
+                espaciolibre=espaciolibre-indices[i].part_size;
+                }else{
+                espaciolibre=espaciolibre-indices[i].part_size-sizeof(EBR);
+                }
+
+                }
+                }
+//---------
+
+        }
+
+        fclose(file2);
+    }
+
+    return aux;
+}
 
 
 
