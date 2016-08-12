@@ -44,10 +44,13 @@ int ErrorEliminarDisco=0;
 int ErrorCrearParticionPrimaria=0;
 int ErrorEliminarParticionPrimaria=0;
 int ErrorCrearParticionLogica=0;
+int ErrorEliminarLogica=0;
+int ErrorMontar=0;
 int ErrorT=0;
 
-
 int fin=0;
+
+
 
 /********************Area de Structs*******************************************/
 typedef struct
@@ -108,7 +111,93 @@ typedef struct
 }EBR;
 
 
+typedef struct
+{
+
+//ESTRUCTURA PARA LOS MONTADOS
+    int estado;
+    char id[5];
+
+
+}Posicion;
+
+
+typedef struct
+{
+    char path[200];
+    char *path2;
+    Posicion posicion[26];
+
+
+}Montaje;
+
+
+
+typedef struct
+{
+    int status;
+    char path3[100];
+    char *path2;
+    char letrafinal;
+    int numerofinal;
+
+    char id[6];
+    //char*idpuntero;
+
+    char*name;
+    char name2[100];
+
+}Montaje2;
+
+
+typedef struct
+{
+    int status;
+    char letra;
+    int numero;
+    char pathPerteneciente[200];
+    char *pathPertenecienteP;
+
+
+    int posiciones[26];
+
+}letra;
+
+
+
+/*******************************************************************************/
+
+Montaje montadas[20];
+Montaje2 montadas2[50];
+letra letras[26];
+
+int NumeroDeMontadas=0;
+int auxletras=0;
+Montaje2 resienMontada;
+int posDeMontada_rep=0;
+
+/******************************************************************************/
+
+
+
 /********************Area de Metodos Herramienta*******************************/
+
+void llenarvacios(){
+
+    int i;
+    for(i=0; i<20; i++){
+
+        strcpy(montadas[i].path,"vacio");
+        int y=0;
+        for(y = 0; y< 26;y++){
+
+            montadas[i].posicion[y].estado=0;
+
+        }
+
+    }
+
+}
 
 //metodo Limpia la Variable
 void limpiarvar(char aux[], int n) {
@@ -226,11 +315,57 @@ char* LeerScript(char path[])
 }
 
 
-/*******************************************************************************/
+void llenarletras(){
+
+    letras[0].letra='a';
+    letras[1].letra='b';
+    letras[2].letra='c';
+    letras[3].letra='d';
+    letras[4].letra='e';
+    letras[5].letra='f';
+    letras[6].letra='g';
+    letras[7].letra='h';
+    letras[8].letra='i';
+    letras[9].letra='j';
+    letras[10].letra='k';
+    letras[11].letra='l';
+    letras[12].letra='m';
+    letras[13].letra='n';
+    letras[14].letra='o';
+    letras[15].letra='p';
+    letras[16].letra='q';
+    letras[17].letra='r';
+    letras[18].letra='s';
+    letras[19].letra='t';
+    letras[20].letra='u';
+    letras[21].letra='v';
+    letras[22].letra='w';
+    letras[23].letra='x';
+    letras[24].letra='y';
+    letras[25].letra='z';
+
+    int i=0;
+    for(i=0; i<50; i++){
+    montadas2[i].status=0;
+    //strcpy(montadas2[i].path,"vacio");
+//    montadas2[i].path2="vacio";
+    }
+
+    i=0;
+    for(i=0; i<26; i++){
+    letras[i].status=0;
+    strcpy(letras[i].pathPerteneciente,"vacio");
+    letras[i].pathPertenecienteP="vacio";
+
+
+    }
 
 
 
-/******************************************************************************/
+
+
+
+}
 
 
 
@@ -240,7 +375,7 @@ char* LeerScript(char path[])
 int main (){
 
     //llena los Arreglos de Las Montadas DE PArticiones
-    //llenarletras();
+    llenarletras();
 
     //inicia El lanzador del programa
     menu_principal();
@@ -276,6 +411,8 @@ void menu_principal (){
         ErrorCrearParticionPrimaria=0;
         ErrorEliminarParticionPrimaria=0;
         ErrorCrearParticionLogica=0;
+        ErrorEliminarLogica=0;
+        ErrorMontar=0;
 
         ContadorInstrucciones=0;
         ContadorComandosExitosos=0;
@@ -305,7 +442,7 @@ void menu_principal (){
                 //fgets(comando,100,stdin);
                 //LeerComando(comando);
 
-                ErrorT=ErrorComando+ErrorInterprete+ErrorCrearDisco+ErrorEliminarDisco+ErrorCrearParticionPrimaria;
+                ErrorT=ErrorComando+ErrorInterprete+ErrorCrearDisco+ErrorEliminarDisco+ErrorCrearParticionPrimaria+ErrorCrearParticionLogica+ErrorEliminarParticionPrimaria+ErrorEliminarLogica+ErrorMontar;
                 printf("\n");
                 printf("|---------------------------------|\n");
                 printf("|(*)Errores Generales:   '%i'      |\n",ErrorT);
@@ -316,6 +453,8 @@ void menu_principal (){
                 printf("|-Errores CrearPartPrim: '%i'      |\n",ErrorCrearParticionPrimaria);
                 printf("|-Errores CrearPartLog:  '%i'      |\n",ErrorCrearParticionLogica);
                 printf("|-Errores ElimPartPrim:  '%i'      |\n",ErrorEliminarParticionPrimaria);
+                printf("|-Errores ElimPartLogi:  '%i'      |\n",ErrorEliminarLogica);
+                printf("|-Errores MontarPart:    '%i'      |\n",ErrorMontar);
                 printf("|                                 |\n");
                 printf("|+Instrucciones Ejetutadas:  '%i'  |\n",ContadorInstrucciones);
                 printf("|+Instrucciones Exitosas  :  '%i'  |\n",ContadorComandosExitosos);
@@ -329,6 +468,8 @@ void menu_principal (){
                 ErrorCrearParticionPrimaria=0;
                 ErrorEliminarParticionPrimaria=0;
                 ErrorCrearParticionLogica=0;
+                ErrorEliminarLogica=0;
+                ErrorMontar=0;
 
                 ContadorInstrucciones=0;
                 ContadorComandosExitosos=0;
@@ -357,6 +498,7 @@ void Interprete(char entrada[])
     int contador=0;
     int p=0;
     int count=0;
+    int activarmount=0;
     int contadorParametrosObligatorios=0;
     char instruccion[100];
     limpiarvar(instruccion,100);
@@ -649,7 +791,15 @@ void Interprete(char entrada[])
                     add=0;
                 }
 
-            }else{
+            }else
+            if(!strcmp(nombreparametro,"id"))//---------------si reconoce path
+            {
+                id=1;
+                strcpy(nuevafuncion.id,parametro);
+                limpiarvar(parametro,100);
+                limpiarvar(nombreparametro,100);
+            }
+            else{
                 printf("\n\n Interprete #_ ERROR_1.4: Parametro Opcional Invalido \n\n");
                 ErrorInterprete++;
             }
@@ -879,6 +1029,13 @@ void Interprete(char entrada[])
 
                 contador++;
                 printf(":::::Reconocido: SAlto Linea::::::\n");
+
+                if(!strcmp(instruccion,"mount") && name==0 && path==0){
+
+                    activarmount=1;
+
+                }
+
                 if((entrada[contador]=='-'||entrada[contador]=='+')){
 
                 }else{
@@ -1109,9 +1266,94 @@ void Interprete(char entrada[])
                                     ErrorComando++;
                                 }
 
-                            }//fin del fdisk
+                            }//fin del FDISK
+                            else if(!strcmp(instruccion,"lspart")){
 
-                            else{
+                             //-------------------------------------------------------------Info
+                                if(path==1)
+                                {
+                                    printf("\n\n Informacion ls \n\n");
+                                    ls(nuevafuncion);
+                                    limpiarvar(instruccion,100);
+
+                                }else{
+                                    printf("\n\nInterprete #_ ERROR8: Ingrese todos los parametros obligatorios de 'ls'\n\n");
+                                    ErrorComando++;
+                                }
+
+                            }//fin LSPART
+                            else if(!strcmp(instruccion,"mount")){//---------------------------------Ejecuta El Mount
+
+                                if(path==1 && name==1)
+                                {
+
+                                    printf("Montar Particion...\n\n");
+                                    MontarParticionF1(nuevafuncion);
+                                    limpiarvar(instruccion,100);
+
+                                }else if(activarmount==1){
+
+
+                                    printf("\nLISTAR MONTADAS......\n");
+                                    MostrarMontadas();
+                                    activarmount=0;
+                                    name=5;
+                                    path=5;
+                                    limpiarvar(instruccion,100);
+                                    ContadorComandosExitosos++;
+                                    printf("\n:::::::::::::::::: FIN LISTA DE MONTADAS :::::::::::::::::::::::::\n\n");
+
+                                }else{
+
+                                    printf("\n\nInterprete #_ ERROR_5.1: Ingrese todos los parametros obligatorios de 'mount'\n\n");
+                                    ErrorComando++;
+                                    //MostrarMontadas();
+
+                                }
+                            }// fin MOUNT
+                            else if(!strcmp(instruccion,"umount")){//---------------------------------Ejecuta El unmount
+
+                                if(id==1){
+
+                                    printf("Desmontar Particion...\n\n");
+                                    printf("Imprime El PArametro:... %s\n\n",nuevafuncion.id);
+                                    DesmontarParticion(nuevafuncion);//-------------------------Desmontar
+                                    limpiarvar(instruccion,100);
+
+                                }else{
+                                printf("\n\nInterprete #_ ERROR_5.9: Ingrese todos los parametros obligatorios de 'unmount'\n\n");
+                                }
+                            }//FIN UMOUNT
+                            else if (!strcmp(instruccion,"rep")){
+
+
+                                    if(path==1 && name==1 && id==1){
+
+                                           //REVISA Q TIPO DE REPORTE ES
+
+                                        if(!strcmp(nuevafuncion.name,"mbr")){  //reporte mbr
+
+                                            printf("\nREPORTE DE MBR... %s\n\n",nuevafuncion.path);
+                                            //ReporteMBR_dot(nuevafuncion);
+                                            limpiarvar(instruccion,100);
+
+                                        }else if(!strcmp(nuevafuncion.name,"disk")){  //report disk
+
+                                            printf("\nREPORTE DE DISK...\n\n");
+                                            ///ReporteDiskMBR(nuevafuncion);
+                                            limpiarvar(instruccion,100);
+
+                                        }else{
+                                            printf("\n\nInterprete #_ ERROR_5.5: EL Parametro 'name' es Invalido\n\n");
+                                            ErrorComando++;
+                                        }
+
+                                    }else{
+                                    printf("\n\nInterprete #_ ERROR_5.6: Ingrese todos los parametros obligatorios de 'rep'\n\n");
+                                    ErrorComando++;
+                                    }
+
+                            }else{
                                 //printf("\n\nInterprete #_ ERROR_3.0: ERROR EN EL COMANDO Invalido\n\n");
                                 //ErrorComando++;
                             }
@@ -1368,6 +1610,93 @@ if(ErrorInterprete==0 && fin==0){
             }
 
         }//fin del fdisk
+        else if(!strcmp(instruccion,"lspart")){
+
+                             //-------------------------------------------------------------Info
+                if(path==1)
+                {
+                    printf("\n\n Informacion ls \n\n");
+                    ls(nuevafuncion);
+                    limpiarvar(instruccion,100);
+
+                }else{
+                    printf("\n\nInterprete #_ ERROR8: Ingrese todos los parametros obligatorios de 'ls'\n\n");
+                    ErrorComando++;
+                }
+
+        }//fin lspart
+        else if(!strcmp(instruccion,"mount")){//---------------------------------Ejecuta El Mount
+
+                if(path==1 && name==1)
+                {
+
+                    printf("Montar Particion...\n\n");
+                    MontarParticionF1(nuevafuncion);
+                    limpiarvar(instruccion,100);
+
+                }else if(activarmount==1 || (path==0 && name==0)){
+
+
+                    printf("\nLISTAR MONTADAS......\n");
+                    MostrarMontadas();
+                    activarmount=0;
+                    name=5;
+                    path=5;
+                    limpiarvar(instruccion,100);
+                    ContadorComandosExitosos++;
+                    printf("\n:::::::::::::::::: FIN LISTA DE MONTADAS :::::::::::::::::::::::::\n\n");
+
+                }else{
+
+                    printf("\n\nInterprete #_ ERROR_5.1: Ingrese todos los parametros obligatorios de 'mount'\n\n");
+                    ErrorComando++;
+                    //MostrarMontadas();
+
+                }
+        }// fin mount
+         else if(!strcmp(instruccion,"umount")){//---------------------------------Ejecuta El unmount
+
+                if(id==1){
+
+                    printf("Desmontar Particion...\n\n");
+                    printf("Imprime El PArametro:... %s\n\n",nuevafuncion.id);
+                    DesmontarParticion(nuevafuncion);//-------------------------Desmontar
+                    limpiarvar(instruccion,100);
+
+                }else{
+                printf("\n\nInterprete #_ ERROR_5.9: Ingrese todos los parametros obligatorios de 'unmount'\n\n");
+                }
+        }//FIN UMOUNT
+        else if (!strcmp(instruccion,"rep")){
+
+
+                if(path==1 && name==1 && id==1){
+
+                       //REVISA Q TIPO DE REPORTE ES
+
+                    if(!strcmp(nuevafuncion.name,"mbr")){  //reporte mbr
+
+                        printf("\nREPORTE DE MBR... %s\n\n",nuevafuncion.path);
+                        //ReporteMBR_dot(nuevafuncion);
+                        limpiarvar(instruccion,100);
+
+                    }else if(!strcmp(nuevafuncion.name,"disk")){  //report disk
+
+                        printf("\nREPORTE DE DISK...\n\n");
+                        ///ReporteDiskMBR(nuevafuncion);
+                        limpiarvar(instruccion,100);
+
+                    }else{
+                        printf("\n\nInterprete #_ ERROR_5.7: EL Parametro 'name' es Invalido\n\n");
+                        ErrorComando++;
+                    }
+
+                }else{
+                printf("\n\nInterprete #_ ERROR_5.8: Ingrese todos los parametros obligatorios de 'rep'\n\n");
+                ErrorComando++;
+                }
+
+        }//fin rep
         else{
             //printf("\n\nInterprete #_ ERROR_3.0: ERROR EN EL COMANDO Invalido\n\n");
             //ErrorComando++;
@@ -2029,6 +2358,19 @@ void EliminarParticion(Funcion funcion)
 
             printf("\n ::::::::::::::::::La PArticion: '%s'  No existe en Las Primarias y Extendidas \n",funcion.name);
 
+            int comparador=ExisteLogica(funcion.name,funcion);
+            if(comparador==0){
+
+            printf("\n\n*************Particion No Existe TAmpoco en las Logicas (Finaliza cn Error)\n ");
+            printf("\n Interprete #_ ERROR555 Al tratar de Acceder al Archivo (no existe en las particiones Primarias , Extendidas y Logicas) \n Nombre:: %s \n",funcion.name);
+            ErrorT++;
+
+            }else{
+            printf("*************Particion Existe y esta en las Logicas (llama al metodo Eliminar Logicas)");
+            //------------------------------------------------------------------Eliminar Logica
+            EliminarLogica(funcion);
+            }
+
 
 
         }//fin si no existe la primaria se va a logica
@@ -2530,6 +2872,1119 @@ int ExisteLogica(char nombre[], Funcion funcion){//retorna 1 si ya esta la parti
     return aux;
 }
 
+void EliminarLogica(Funcion funcion){
+
+    int aux=0;
+    int ErrorT=0;
+    int nombresiguales=0;
+    int numeroextendida=0;
+    int idextendida=-1;
+    int tamanooextendida=0;
+    int inicio=-1;
+    int fin=-1;
+    char*nombreextendida;
+    int contador=0;
+
+//arregla el path del archivo para encontrarlo
+    //******************* Quita "comillas" en la path **************************
+    char pathauxiliar[100];
+    strcpy(pathauxiliar,funcion.path);
+
+    char finalizado[100];
+    strcpy(finalizado,"cd /\n");
+    if(pathauxiliar[0]=='\"')
+    {
+        limpiarvar(funcion.path,100);
+        int q=1;
+        while(pathauxiliar[q]!='\"')
+        {
+            char c2[1];
+            c2[0]=pathauxiliar[q];
+            strncat(funcion.path,c2,1);
+            q++;
+        }
+
+    }
+  //**************************************************************************
+
+
+    FILE* file2= fopen(funcion.path, "rb+");
+    if (file2==NULL)
+    {
+        printf("\n Interprete #_ ERROR_5.0 Al tratar de Acceder al Archivo \n\n\n");
+        ErrorEliminarLogica++;
+    }
+    else//si existe a borrar
+    {
+        MbrDisco mbr2;
+        fseek(file2,0,SEEK_SET);
+        fread(&mbr2, sizeof(MbrDisco), 1, file2);
+        int z;
+
+
+        for(z=0;z<4;z++)
+        {
+            if(mbr2.particiones[z].part_type=='e'||mbr2.particiones[z].part_type=='E')
+            {
+                numeroextendida++;
+                idextendida=z;
+                tamanooextendida=mbr2.particiones[z].part_size;
+                nombreextendida=mbr2.particiones[z].part_name;
+            }
+        }
+
+        //tramo2----------------------
+        int tamanoparticionBorrada=0;
+
+        EBR ebr;
+        int actual=mbr2.particiones[idextendida].part_start;
+        printf("0_posicion actual %i\n",actual);
+        fseek(file2,actual,SEEK_SET);
+        fread(&ebr, sizeof(EBR), 1, file2);
+        int next=ebr.part_next;
+
+        do{
+            if(ebr.part_next!=-1){
+                actual+=sizeof(EBR);
+                actual+=ebr.part_size;
+                printf("1_posicion actual %i\n",actual);
+                fseek(file2,actual,SEEK_SET);
+                fread(&ebr, sizeof(EBR), 1, file2);
+                next=ebr.part_next;
+                contador++;
+            }
+            contador++;
+        }while(next!=-1);
+
+
+        //printf("-----------------Lista de Particiones------------------------\n");
+        int contador2=contador;
+        EBR indices[contador];//modifico tamaño del arreglo
+        contador=0;
+        actual=mbr2.particiones[idextendida].part_start;
+        fseek(file2,actual,SEEK_SET);
+        fread(&indices[contador], sizeof(EBR), 1, file2);
+
+        do{
+            printf("------------------------------------------------------------\n");
+            printf("fit %c\n",indices[contador].part_fit);
+            printf("name %s\n",indices[contador].part_name);
+            printf("next %i\n",indices[contador].part_next);
+            printf("size %i\n",indices[contador].part_size);
+            printf("inicio %i\n",indices[contador].part_start);
+            printf("estado %c\n",indices[contador].part_status);
+            printf("------------------------------------------------------------\n");
+            if(indices[contador].part_next!=-1){
+                printf("contador %i\n",contador);
+                actual+=sizeof(EBR);
+                actual+=indices[contador].part_size;
+                printf("posicion actual %i\n",actual);
+                fseek(file2,actual,SEEK_SET);
+                fread(&indices[contador+1], sizeof(EBR), 1, file2);
+                next=indices[contador].part_next;
+                printf("siguiente %i\n",next);
+            }else{
+                printf("contador %i\n",contador);
+                next=-1;
+            }
+            contador++;
+        }while(next!=-1);
+
+
+
+        char*a;
+        int i=0;
+        for(i=0;i<contador;i++){
+            if(indices[i].part_start!=-1 ){//&& indices[i].part_status!='0'
+                //vacio=0;
+                printf("mostrar part_name: %s\n",indices[i].part_name);
+                a=indices[i].part_name;
+
+                printf("mostrar a borrar: %s\n",funcion.name);
+
+                if(strcasecmp(funcion.name,a)==0 && indices[i].part_status!='0'){//encontro la particion a borrar  y su estatudus es diferente de 0
+                    if(!strcmp(funcion.delete_,"fast"))//si el modo es fast :V
+                    {
+
+                        indices[i].part_status='0';
+
+                    }else if(!strcmp(funcion.delete_,"full"))//si es modo full
+                    {
+
+
+                        int inicio2=indices[i].part_start;
+                        int tam=indices[i].part_size;
+                        int fin2=tam+inicio2;
+
+                        indices[i].part_status='0';
+                        indices[i].part_size='0';
+                        indices[i].part_start=-1;
+                        indices[i].part_next=-1;
+                        int contador=0;
+                        for(contador=0;contador<16;contador++)
+                        {
+                            indices[i].part_name[contador]='\0';
+                        }
+                        indices[i].part_fit='\0';
+
+
+                        char relleno='\0';
+                        int cont=0;
+                        for (cont = 0; cont < fin2; cont++) {
+                            fwrite(&relleno, 1, 1, file2);
+                        }
+                        rewind(file2);
+                        fclose(file2);
+
+
+
+                    }
+
+
+                }//fin del if donde encuentra
+
+            }//fin del if q recorre
+
+
+        }//fin del for
+
+            //inicio de la EscrituraSSS
+            actual=mbr2.particiones[idextendida].part_start;
+            int escribir=0;
+            for(escribir=0;escribir<(contador2);escribir++){
+
+                        printf("-----------------------ESCRIBE-------------------------------------\n");
+                        printf("fit %c\n",indices[escribir].part_fit);
+                        printf("name %s\n",indices[escribir].part_name);
+                        printf("next %i\n",indices[escribir].part_next);
+                        printf("size %i\n",indices[escribir].part_size);
+                        printf("inicio %i\n",indices[escribir].part_start);
+                        printf("estado %c\n",indices[escribir].part_status);
+                        printf("------------------------------------------------------------\n");
+                        printf("posicion actual %i\n",actual);
+
+                    fseek(file2,actual,SEEK_SET);
+                    fwrite(&indices[escribir], sizeof(EBR), 1, file2);
+                    actual+=sizeof(EBR);
+                    actual+=indices[escribir].part_size;
+
+            }
+
+    }
+
+
+    fclose(file2);
+
+}
+
+void lsl(Funcion funcion){
+
+    int ErrorT=0;
+    int nombresiguales=0;
+    //int numeroprimarias=0;
+    int numeroextendida=0;
+    int idextendida=-1;
+    int tamanooextendida=0;
+    int inicio=-1; int fin=-1;
+    char*nombreextendida;
+    int contador=0;
+
+//******************* Quita "comillas" en la path **************************
+    char pathauxiliar[100];
+    strcpy(pathauxiliar,funcion.path);
+
+    char finalizado[100];
+    strcpy(finalizado,"cd /\n");
+    if(pathauxiliar[0]=='\"')
+    {
+        limpiarvar(funcion.path,100);
+        int q=1;
+        while(pathauxiliar[q]!='\"')
+        {
+            char c2[1];
+            c2[0]=pathauxiliar[q];
+            strncat(funcion.path,c2,1);
+            q++;
+        }
+
+    }
+  //**************************************************************************
+
+    FILE* file2= fopen(funcion.path, "rb+");
+    if (file2==NULL)
+    {
+        printf("\n Interprete #_ ERROR5 Al tratar de Acceder al Archivo \n\n\n");
+        ErrorT++;
+    }
+    else
+    {
+        MbrDisco mbr2;
+        //printf("%d",ftell(file2));
+        fseek(file2,0,SEEK_SET);
+        fread(&mbr2, sizeof(MbrDisco), 1, file2);
+        int z;
+
+
+        for(z=0;z<4;z++)
+        {
+            int k=0,l=0;
+            while(funcion.name[k]!=NULL){
+                if(mbr2.particiones[z].part_name[k]==funcion.name[k]){
+                    l++;
+                }k++;
+            }
+
+            if(mbr2.particiones[z].part_type=='e'||mbr2.particiones[z].part_type=='E')
+            {
+                numeroextendida++;
+                idextendida=z;
+                tamanooextendida=mbr2.particiones[z].part_size;
+                nombreextendida=mbr2.particiones[z].part_name;
+            }
+        }
+
+        if(nombresiguales>0){
+        printf("\n Interprete #_ ERROR21 Nombre de la PArticion ya Existente \n\n %s \n",funcion.name);
+        ErrorT++;
+        }
+        else{
+
+            int tamanoparticion=0;
+            if(funcion.unit=='b')
+            {
+                tamanoparticion=funcion.size;
+            }
+            else if(funcion.unit=='k')
+            {
+                tamanoparticion=(funcion.size*1024);
+            }
+            else
+            {
+                tamanoparticion=funcion.size*(1024*1024);
+            }
+
+            int vacio=1;
+            EBR ebr;
+            int actual=mbr2.particiones[idextendida].part_start;
+            //printf("posicion actual %i\n",actual);
+            fseek(file2,actual,SEEK_SET);
+            fread(&ebr, sizeof(EBR), 1, file2);
+            int next=ebr.part_next;
+            inicio=sizeof(EBR);
+
+            int fin=inicio+tamanoparticion;
+            //int contador=0;
+            int numeroebr=0;
+            int espaciolibre=mbr2.particiones[idextendida].part_size;
+            espaciolibre-=32;
+            do{
+                if(ebr.part_next!=-1){
+                    actual+=sizeof(EBR);
+                    actual+=ebr.part_size;
+                    //printf("posicion actual %i\n",actual);
+                    fseek(file2,actual,SEEK_SET);
+                    fread(&ebr, sizeof(EBR), 1, file2);
+                    next=ebr.part_next;
+                    contador++;
+                }
+                contador++;
+            }while(next!=-1);
+
+            printf("-----------------Lista de Particiones------------------------\n");
+
+            EBR indices[contador+1];
+            contador=0;
+            actual=mbr2.particiones[idextendida].part_start;
+            fseek(file2,actual,SEEK_SET);
+            fread(&indices[contador], sizeof(EBR), 1, file2);
+            do{
+
+                if(indices[contador].part_next!=-1){
+                    //printf("contador %i\n",contador);
+                    actual+=sizeof(EBR);
+                    actual+=indices[contador].part_size;
+                    //printf("posicion actual %i\n",actual);
+                    fseek(file2,actual,SEEK_SET);
+                    fread(&indices[contador+1], sizeof(EBR), 1, file2);
+                    next=indices[contador].part_next;
+                    //printf("siguiente %i\n",next);
+                }else{
+                    //printf("contador %i\n",contador);
+                    next=-1;
+                }
+                contador++;
+            }while(next!=-1);
+
+            int i=0;
+            for(i=0;i<contador;i++){
+                if(indices[i].part_start!=-1 ){//&& indices[i].part_status!='0'
+                vacio=0;
+
+                //printf("*Nomb%s\n",indices[i].part_name);
+                printf("**Logica, Nombre:: %s",indices[i].part_name);
+                printf(",Tamaño:: %i",indices[i].part_size);
+                printf("\n");
+                printf(",Status:: %c",indices[i].part_status);
+                printf("\n");
+                printf(",Start:: %i",indices[i].part_start);
+                printf("\n");
+                printf(",Next:: %i",indices[i].part_next);
+                printf("\n");
+
+                if(fin<=(indices[i].part_start-sizeof(EBR))){
+                    break;
+                }
+                else
+                {
+                    inicio=indices[i].part_start+indices[i].part_size+sizeof(EBR);
+                    fin=inicio+tamanoparticion;
+                    numeroebr=i+1;
+                }
+                if(i==0){
+                espaciolibre=espaciolibre-indices[i].part_size;
+                }else{
+                espaciolibre=espaciolibre-indices[i].part_size-sizeof(EBR);
+                }
+
+                }
+                }
+
+            //aqui envez de la funcion iba el contador :v
+            printf("**************** Info ************************************** \n");
+            printf("Total:::::: %i\n",NumeroDeLogicas(funcion));
+            printf("-Posicion: %i\n",numeroebr);
+            printf("-Espacio Libre: %i\n",espaciolibre);
+            printf("Inicio: %i\n",inicio);
+            printf("Final: %i\n",fin);
+
+            printf("************************************************************ \n");
+            printf("*********Numero de Particiones Logicas:   %i \n",NumeroDeLogicas(funcion));
+            printf("************************************************************ \n");
+            printf("///////////////////////Numero de Particiones Logicas por funcion:   %i \n",NumeroDeLogicas(funcion));
+
+        }
+
+        fclose(file2);
+    }
+
+
+            printf("**ERRORES ENCONTRADOS LSL::::::: %i\n",ErrorT);
+
+}
+
+void ls(Funcion funcion){
+
+    char* nombreextendida;
+
+    printf("\n\n**************** InforMacion de Disco ***********************\n\n");
+    int ErrorT=0;
+//******************* Quita "comillas" en la path **************************
+    char pathauxiliar[100];
+    strcpy(pathauxiliar,funcion.path);
+
+    char finalizado[100];
+    strcpy(finalizado,"cd /\n");
+    if(pathauxiliar[0]=='\"')
+    {
+        limpiarvar(funcion.path,100);
+        int q=1;
+        while(pathauxiliar[q]!='\"')
+        {
+            char c2[1];
+            c2[0]=pathauxiliar[q];
+            strncat(funcion.path,c2,1);
+            q++;
+        }
+
+    }
+  //**************************************************************************
+
+    int nombresiguales=0;
+    int numeroprimarias=0;
+    int numeroextendida=0;
+
+    int TempPrimarias=0;
+    int TempExt=0;
+
+    printf("Disco:: %s",pathauxiliar);
+    printf("\n");
+
+        FILE* file2= fopen(funcion.path, "rb+");
+        if (file2==NULL){  //si no existe el archivo
+            printf("\n Interprete #_ ERROR5 Al tratar de Acceder al Archivo \n\n");
+            ErrorT++;
+
+        }else{//si existe
+
+            MbrDisco mbr2;
+            fseek(file2,0,SEEK_SET);
+            fread(&mbr2, sizeof(MbrDisco), 1, file2);
+            printf("Asignacion:: %i",mbr2.mbr_disk_signature);
+            printf("\n");
+            printf("Fecha de Consulta:: %s",mbr2.mbr_fecha_creacion);
+            printf("\n");
+            printf("Tamaño de Unidad:: %i",mbr2.mbr_tamano);
+            printf("\n\n");
+            printf("----------------Particiones En Disco------------------------\n");
+            int z=0;
+            for(z=0;z<4;z++){ //recorre el arreglo de particiones primarias
+                int k=0;
+                int l=0;
+                while(funcion.name[k]!=NULL){
+                if(mbr2.particiones[z].part_name[k]==funcion.name[k]){
+                    l++;
+                }
+                    k++;
+                }
+
+                if(mbr2.particiones[z].part_type=='p'||mbr2.particiones[z].part_type=='P')//si el tipo es primaria
+                {
+
+                printf("*Primaria, Nombre:: %s",mbr2.particiones[z].part_name);
+                printf(",Tamaño:: %i",mbr2.particiones[z].part_size);
+                printf("\n");
+                numeroprimarias++;
+
+                }
+                if(mbr2.particiones[z].part_type=='e'||mbr2.particiones[z].part_type=='E')//si el tipo es extendida
+                {
+                printf("*Extendida, Nombre:: %s",mbr2.particiones[z].part_name);
+                printf(",Tamaño:: %i",mbr2.particiones[z].part_size);
+                printf("\n");
+
+                nombreextendida=mbr2.particiones[z].part_name;
+                numeroextendida++;
+/*
+                EBR mostrar;
+                fseek(file2,mbr2.particiones[z].part_start,SEEK_SET); //escribir el bit ebr inicial
+                fread(&mostrar, sizeof(EBR), 1, file2);
+                printf("Inicio EBR: %i \n",mostrar.part_start);
+                printf("Siguiente ebr: %i \n",mostrar.part_next);
+                printf("Estado ebr: %c \n",mostrar.part_status);
+*/
+                }
+/*
+                printf("Tipo De Ajuste: %c \n",mbr2.particiones[z].part_fit);
+                printf("Tamaño Particion %i \n", mbr2.particiones[z].part_size);
+*/
+            }
+
+            printf("************************************************************ \n");
+            printf("*********Numero de Particiones primarias:   %i \n",numeroprimarias);
+            printf("*********Numero de PArticiones extendidas:  %i \n",numeroextendida);
+            printf("************************************************************ \n");
+
+            if(numeroextendida!=0){
+
+                printf(":::::::::Reporte De Particion Extendida: '%s'  \n",nombreextendida);
+                lsl(funcion);
+
+            }else{
+
+                printf("--No Existe Particiones Extendidas en la Unidad \n");
+
+            }
+
+        }
+}
+
+int NumeroDeLogicas(Funcion funcion){//retorna 1 si ya esta la particion, y 0 si no existe
+
+   int aux=0;
+
+    int ErrorT=0;
+    int nombresiguales=0;
+    //int numeroprimarias=0;
+    int numeroextendida=0;
+    int idextendida=-1;
+    int tamanooextendida=0;
+    int inicio=-1; int fin=-1;
+    char*nombreextendida;
+    int contador=0;
+
+    //arregla el path del archivo para encontrarlo
+    //******************* Quita "comillas" en la path **************************
+    char pathauxiliar[100];
+    strcpy(pathauxiliar,funcion.path);
+
+    char finalizado[100];
+    strcpy(finalizado,"cd /\n");
+    if(pathauxiliar[0]=='\"')
+    {
+        limpiarvar(funcion.path,100);
+        int q=1;
+        while(pathauxiliar[q]!='\"')
+        {
+            char c2[1];
+            c2[0]=pathauxiliar[q];
+            strncat(funcion.path,c2,1);
+            q++;
+        }
+
+    }
+  //**************************************************************************
+
+
+
+    FILE* file2= fopen(funcion.path, "rb+");
+    if (file2==NULL)
+    {
+        printf("\n Interprete #_ ERROR5 Al tratar de Acceder al Archivo \n\n\n");
+        ErrorT++;
+    }
+    else
+    {
+        MbrDisco mbr2;
+        //printf("%d",ftell(file2));
+        fseek(file2,0,SEEK_SET);
+        fread(&mbr2, sizeof(MbrDisco), 1, file2);
+        int z;
+        int tamanoparticion=0;
+
+        for(z=0;z<4;z++)
+        {
+            int k=0,l=0;
+            while(funcion.name[k]!=NULL){
+                if(mbr2.particiones[z].part_name[k]==funcion.name[k]){
+                l++;
+                }
+                k++;
+            }
+
+            if(mbr2.particiones[z].part_type=='e'|| mbr2.particiones[z].part_type=='E')
+            {
+                numeroextendida++;
+                idextendida=z;
+                tamanooextendida=mbr2.particiones[z].part_size;
+                nombreextendida=mbr2.particiones[z].part_name;
+            }
+        }
+
+        if(nombresiguales>0){
+        printf("\n Interprete #_ ERROR21 Nombre de la PArticion ya Existente \n\n %s \n",funcion.name);
+        ErrorT++;
+        }
+        else{
+
+            int vacio=1;
+            EBR ebr;
+            int actual=mbr2.particiones[idextendida].part_start;
+            //printf("posicion actual %i\n",actual);
+            fseek(file2,actual,SEEK_SET);
+            fread(&ebr, sizeof(EBR), 1, file2);
+            int next=ebr.part_next;
+            inicio=sizeof(EBR);
+
+            int fin=inicio+tamanoparticion;
+            //int contador=0;
+            int numeroebr=0;
+            int espaciolibre=mbr2.particiones[idextendida].part_size;
+            espaciolibre-=32;
+            do{
+                if(ebr.part_next!=-1){
+                    actual+=sizeof(EBR);
+                    actual+=ebr.part_size;
+                    //printf("posicion actual %i\n",actual);
+                    fseek(file2,actual,SEEK_SET);
+                    fread(&ebr, sizeof(EBR), 1, file2);
+                    next=ebr.part_next;
+                    contador++;
+                }
+                contador++;
+            }while(next!=-1);
+
+            printf("-----------------Lista de Particiones------------------------\n");
+
+            EBR indices[contador+1];
+            contador=0;
+            actual=mbr2.particiones[idextendida].part_start;
+            fseek(file2,actual,SEEK_SET);
+            fread(&indices[contador], sizeof(EBR), 1, file2);
+            do{
+
+                if(indices[contador].part_next!=-1){
+
+                    actual+=sizeof(EBR);
+                    actual+=indices[contador].part_size;
+                    fseek(file2,actual,SEEK_SET);
+                    fread(&indices[contador+1], sizeof(EBR), 1, file2);
+                    next=indices[contador].part_next;
+
+                }else{
+
+                    next=-1;
+                }
+                contador++;
+            }while(next!=-1);
+
+            char a[100];
+            int i=0;
+            for(i=0;i<contador;i++){
+                if(indices[i].part_start!=-1 ){//&& indices[i].part_status!='0'
+                vacio=0;
+
+                //a=indices[i].part_name;
+
+                    aux++;
+
+
+
+                if(fin<=(indices[i].part_start-sizeof(EBR))){
+                    break;
+                }
+                else
+                {
+                    inicio=indices[i].part_start+indices[i].part_size+sizeof(EBR);
+                    fin=inicio+tamanoparticion;
+                    numeroebr=i+1;
+                }
+                if(i==0){
+                espaciolibre=espaciolibre-indices[i].part_size;
+                }else{
+                espaciolibre=espaciolibre-indices[i].part_size-sizeof(EBR);
+                }
+
+                }
+                }
+//---------
+
+        }
+
+        fclose(file2);
+    }
+
+    return aux;
+}
+
+int PosicionDeMontada;//setea la posicion q tiene en la lista de montadas cada ves q entra al metodo de abajo
+int EstaMontada(Funcion funcion){
+
+
+        int estamontada=0;
+    int posDeMontada=0;
+    int ErrorT=0;
+
+     int i;
+     for(i=0; i<50; i++){//for para verificar si esta montada la particion a desmontar
+
+         if(!strcmp(montadas2[i].id,funcion.id)){
+             printf("Si esta Montada LA Particion...\n");
+             posDeMontada_rep=i;
+             PosicionDeMontada=i;
+             estamontada=1;
+             break;
+         }else{
+         }
+
+     }//------------------------------------------------------------------------
+
+     return estamontada;
+}
+
+void MostrarMontadas(){
+    printf("*****************************************************************************\n");
+    printf("**********************PARTICIONES MONTADAS***********************************\n");
+    printf("*****************************************************************************\n");
+    int i;
+    for(i=0; i<50; i++){
+
+        if(montadas2[i].status==1){//es montada va :V chavo
+
+        printf("\n-----------Posicion en Arreglo= %i ------------------------------------\n" , i);
+        printf("Particion Montada: '%s' \n",montadas2[i].name2);
+        printf("ID : %s \n",montadas2[i].id);
+        printf("\n");
+        printf("\n");
+        printf("Path: %s \n",montadas2[i].path3);
+        printf("Letra: %c \n",montadas2[i].letrafinal);
+        printf("Numero: %d \n",montadas2[i].numerofinal);
+        printf("Particion Montada: '%s' \n",montadas2[i].name);
+        printf("Path: %s \n",montadas2[i].path2);
+
+        printf("\n------------------------------------------------------------------------\n");
+
+
+        }else{
+        }
+
+    }
+
+
+
+}
+
+void MostrarMontadasJ(){
+
+    int i=0;
+    for(i=0; i<20; i++){
+    printf("**posicion path::::::: %s\n",montadas[i].path);
+
+        int y=0;
+        for(y = 0; y< 26;y++){
+            if(montadas[i].posicion[y].estado == 1){
+
+            printf("**posicion estado::::::: %i\n",montadas[i].posicion[y].estado);
+            printf("**posicion id::::::: %s\n",montadas[i].posicion[y].id);
+
+
+            }
+        }
+
+    }
+
+}
+
+void MontarParticionJ(Funcion funcion){
+
+    llenarvacios();
+
+    char valornumero[6];
+    int pathEncontrada=0;
+                    int x;
+                    for(x = 0; x < 50; x++){
+                        if(strcasecmp(montadas[x].path,funcion.path)==0){ //Encontro la path
+                            pathEncontrada = 1;
+                            int y;
+                            for(y = 0; y< 26;y++){
+                                if(montadas[x].posicion[y].estado == 0){
+                                   montadas[x].posicion[y].estado = 1;
+                                   //montadas[x].posicion[y].id[3] = letras[y];
+                                   sprintf(valornumero,"%d",(y+1));
+                                }
+                            }
+                        }else if(strcasecmp(montadas[x].path,"vacio")== 0 && pathEncontrada == 0){
+                            strcpy(montadas[x].path,funcion.path);
+                            pathEncontrada = 1;
+                            int y;
+                            for(y = 0; y< 26;y++){
+                                if(montadas[x].posicion[y].estado == 0){
+                                    montadas[x].posicion[y].estado = 1;
+                                    //montadas[x].posicion[y].id[3] = letras[y];
+                                    sprintf(valornumero,"%d",(y+1));
+                                }
+                            }
+                        }
+                    }
+
+
+
+                    MostrarMontadasJ();
+}
+
+void MontarParticionF1(Funcion funcion){
+
+    int ErrorT=0;
+
+//arregla el path del archivo para encontrarlo
+    //******************* Quita "comillas" en la path **************************
+    char pathauxiliar[100];
+    strcpy(pathauxiliar,funcion.path);
+
+    char finalizado[100];
+    strcpy(finalizado,"cd /\n");
+    if(pathauxiliar[0]=='\"')
+    {
+        limpiarvar(funcion.path,100);
+        int q=1;
+        while(pathauxiliar[q]!='\"')
+        {
+            char c2[1];
+            c2[0]=pathauxiliar[q];
+            strncat(funcion.path,c2,1);
+            q++;
+        }
+
+    }
+  //**************************************************************************
+
+
+    FILE* file2= fopen(funcion.path, "rb+");
+    if (file2==NULL)
+    {
+        printf("\n Interprete #_ ERROR_5.4 Al tratar de Acceder al Archivo \n\n\n");
+        ErrorT++;
+        ErrorMontar++;
+    }
+    else//si existe El Disco Ahora a Buscar Entre Las PRimarias
+    {
+
+        MbrDisco mbr2;
+        fseek(file2,0,SEEK_SET);
+        fread(&mbr2, sizeof(MbrDisco), 1, file2);
+        int partcionborrar=-1;
+        int z=0;
+        int k=0;
+        int l=0;
+        for(z=0;z<4;z++)
+        {
+            //mbr2.particiones[z].part_status!='0'
+            if(!strcmp(mbr2.particiones[z].part_name,funcion.name)&&mbr2.particiones[z].part_status!='0'){
+                partcionborrar=z;
+            }
+
+        }
+        if(partcionborrar>=0)
+        {
+            printf("\n\n*************Particion Existe En Las Primarias y Extendida\n ");
+            //------------------------------------------------------------------LLAMA A MONTAR PARTICION
+            MontarParticionF2(funcion);
+
+        }else{
+            printf("\n\n*************Particion NOOOOO Existe En Las Primarias y Extendida Verificando en Logicas.....\n ");
+            int comparador=ExisteLogica(funcion.name,funcion);
+            if(comparador==0){
+
+            printf("\n\n*************Particion No Existe TAmpoco en las Logicas (Finaliza cn Error)\n ");
+            printf("\n Interprete #_ ERROR_5.3 Al tratar de Acceder al Archivo (no existe en las particiones Primarias , Extendidas y Logicas) \n Nombre:: %s \n",funcion.name);
+            ErrorT++;
+            ErrorMontar++;
+
+            }else{
+
+            printf("\n\n*************Particion Existe  en las Logicas \n ");
+            //------------------------------------------------------------------LLAMA A MONTAR PARTICION
+            MontarParticionF2(funcion);
+            }
+
+        }
+
+
+
+        fclose(file2);
+
+
+    }
+
+
+    printf("\n\n *****Montado Finalizado ******\n\n");
+
+    printf("**ERRORES ENCONTRADOS::::::: %i\n",ErrorT);
+
+
+}
+
+void MontarParticionF2(Funcion funcion){
+
+//arregla el path del archivo para encontrarlo
+    //******************* Quita "comillas" en la path **************************
+    char pathauxiliar[100];
+    strcpy(pathauxiliar,funcion.path);
+
+    char finalizado[100];
+    strcpy(finalizado,"cd /\n");
+    if(pathauxiliar[0]=='\"')
+    {
+        limpiarvar(funcion.path,100);
+        int q=1;
+        while(pathauxiliar[q]!='\"')
+        {
+            char c2[1];
+            c2[0]=pathauxiliar[q];
+            strncat(funcion.path,c2,1);
+            q++;
+        }
+
+    }
+  //**************************************************************************
+
+
+    printf("\n-----------Path ASTERISCO= %s ------------------------------------\n" , funcion.path);
+
+char letraAasignar;
+int numeroAsignar;
+int auxLetraSeteada;
+int i;
+for(i=0; i<50; i++){
+
+    if(montadas2[i].status==0){//hay espacio libre monta una aqui
+
+
+      int auxLetraDisponible;
+      int j;
+      for(j=0; j<26; j++){//-----------------------------------------------------for q busca letra disponible
+
+          if(letras[j].status==1){//llena
+          }else{//disponible
+
+          auxLetraDisponible=j;
+          auxLetraSeteada=j;
+          break;
+          }
+      }//-----------------------------------------------------------------------
+
+      int tieneletra=0;
+      j=0;
+      for(j=0; j<26; j++){//----------------------------------------------------busca si el disco ya tiene una letra asignada------
+
+          if(!strcmp(letras[j].pathPerteneciente,funcion.path)){// si la path de la funcion es igual a la del arreglo de letras ya tiene letra asignada
+
+              letraAasignar=letras[j].letra;
+              auxLetraSeteada=j;
+              tieneletra=1;
+
+          }
+
+      }//-----------------------------------------------------------------------
+
+
+      if(tieneletra==1){ //si ya tiene una letra disponible
+          printf("La LEtra q se Asignara es la: '%c' \n", letraAasignar);
+          printf("La Posicion de La Letra Asignada: '%i' \n", auxLetraSeteada);
+      }else{ //falta ponerle letra disponible
+          letraAasignar=letras[auxLetraDisponible].letra;
+          printf("La LEtra q Estaba Disponible y se Asigno es: '%c' \n", letraAasignar);
+          printf("La Posicion de La Letra Asignada: '%i' \n", auxLetraSeteada);
+          letras[auxLetraDisponible].status=1;
+          strcpy(letras[auxLetraDisponible].pathPerteneciente,funcion.path);
+          letras[auxLetraDisponible].pathPertenecienteP=funcion.path;
+
+          //---llenar el arreglo de posisciones en 0
+          for(j=0; j<26; j++){
+              letras[auxLetraDisponible].posiciones[j]=0;
+          }
+      }
+
+
+
+      //for para buscar el numero Disponible
+
+      for(j=0; j<26; j++){
+
+          if(letras[auxLetraSeteada].posiciones[j]==0){//esta vacio entonces esta posicion se puede poner
+
+              numeroAsignar=j+1;
+              letras[auxLetraSeteada].posiciones[j]=numeroAsignar;
+              break;
+
+          }else{//esta lleno esta posicion no se puede poner
+          }
+
+      }
+
+     // limpiarvar(montadas2[i].path2,100);
+      limpiarvar(montadas2[i].name2,100);
+      //Asigna ya Todo Asi Final
+      montadas2[i].letrafinal=letraAasignar;
+      montadas2[i].numerofinal=numeroAsignar;
+      montadas2[i].path2=funcion.path;
+      montadas2[i].status=1;
+      montadas2[i].name=funcion.name;
+      strcpy(montadas2[i].name2,funcion.name);
+      strcpy(montadas2[i].path3,funcion.path);
+      montadas2[i].id[0]='v';
+      montadas2[i].id[1]='d';
+      montadas2[i].id[2]=letraAasignar;
+
+
+
+
+      //char c[2]=(char) (numeroAsignar + 48);
+
+      //COLOCAR NUMERO DE LA TABLA
+      char texto[2];
+      sprintf(texto, "%d", numeroAsignar);
+
+      printf("Numero A Concatenar: '%s' \n", texto);
+      int k=0;
+      for(k; k<2;k++){
+
+          if(texto[k+1]==NULL){
+          montadas2[i].id[3]=texto[k];
+          break;
+          }else{
+          montadas2[i].id[3]=texto[k];
+          montadas2[i].id[4]=texto[k+1];
+          break;
+          }
+
+      }
+
+
+      printf("*************************************************\n" );
+      printf("Imprime Concatenada FINAL: '%s' \n", montadas2[i].id );
+      printf("*************************************************\n" );
+      ContadorComandosExitosos++;
+
+      break;
+
+
+    }else{//no hay espacio para montar
+
+    }
+
+}
+
+MostrarMontadas();
+}
+
+void DesmontarParticion(Funcion funcion){
+
+    int estamontada=0;
+    int posDeMontada=0;
+    int ErrorT=0;
+
+     int i;
+     for(i=0; i<50; i++){//for para verificar si esta montada la particion a desmontar
+
+         if(!strcmp(montadas2[i].id,funcion.id)){
+             printf("Si esta Montada LA Particion...\n");
+             posDeMontada=i;
+             estamontada=1;
+             break;
+         }else{
+         }
+
+     }//------------------------------------------------------------------------
+
+     if(estamontada==1){//si esta montada 1
+
+      char letraDeLaDesmontada;
+      int auxLetraSeteada;
+      int tieneletra=0;
+      int j=0;
+      for(j=0; j<26; j++){//----------------------------------------------------busca si el disco ya tiene una letra asignada------
+
+          if(strcasecmp(letras[j].pathPertenecienteP,montadas2[posDeMontada].path2)==0){// si la path de la funcion es igual a la del arreglo de letras ya tiene letra asignada
+
+              letraDeLaDesmontada=letras[j].letra;
+              auxLetraSeteada=j;
+              tieneletra=1;
+
+          }
+      }//-----------------------------------------------------------------------
+
+
+        //for para buscar el numero Disponible
+
+      for(j=0; j<26; j++){
+
+          if(letras[auxLetraSeteada].posiciones[j]==montadas2[posDeMontada].numerofinal){//si la posicion del arreglo tinee al numero de la q eliminara
+
+              letras[auxLetraSeteada].posiciones[j]=0;
+              break;
+
+          }else{//esta lleno esta posicion no se puede poner
+          }
+
+      }
+
+        //DESMONTARLA
+        printf("**PArticion Desmontada::::::: %s\n",montadas2[posDeMontada].name);
+        printf("**PArticion ID::::::: %s\n",montadas2[posDeMontada].id);
+        printf("\n\n**Desmontado Finalizado::::::: %s\n",montadas2[posDeMontada].name);
+        montadas2[posDeMontada].status=0;
+
+
+
+     }else{//sino esta montada Error 0
+        printf("\n Interprete #_ ERROR_6.0(unmount1) La particion '%s' No esta Montada \n\n\n",funcion.id);
+        ErrorT++;
+     }
+
+    MostrarMontadas();
+
+
+}
 
 
 
