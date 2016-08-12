@@ -46,10 +46,26 @@ int ErrorEliminarParticionPrimaria=0;
 int ErrorCrearParticionLogica=0;
 int ErrorEliminarLogica=0;
 int ErrorMontar=0;
+int ErrorReporte1=0;
 int ErrorT=0;
 
 int fin=0;
 
+
+
+char Dot_MBR[5000];
+char Dot_EBR[5000]=" ";
+int switch_mbr=0;
+int switch_ebr=0;
+
+char cadG[5000];
+char cadE[5000];
+char cadd[5000];//variable global q concatena los Dot
+
+char sincomillas[100];
+//-----------------------------------------------------------------
+char *auxconc;
+char *auxconc2;
 
 
 /********************Area de Structs*******************************************/
@@ -413,6 +429,7 @@ void menu_principal (){
         ErrorCrearParticionLogica=0;
         ErrorEliminarLogica=0;
         ErrorMontar=0;
+        ErrorReporte1=0;
 
         ContadorInstrucciones=0;
         ContadorComandosExitosos=0;
@@ -442,7 +459,7 @@ void menu_principal (){
                 //fgets(comando,100,stdin);
                 //LeerComando(comando);
 
-                ErrorT=ErrorComando+ErrorInterprete+ErrorCrearDisco+ErrorEliminarDisco+ErrorCrearParticionPrimaria+ErrorCrearParticionLogica+ErrorEliminarParticionPrimaria+ErrorEliminarLogica+ErrorMontar;
+                ErrorT=ErrorComando+ErrorInterprete+ErrorCrearDisco+ErrorEliminarDisco+ErrorCrearParticionPrimaria+ErrorCrearParticionLogica+ErrorEliminarParticionPrimaria+ErrorEliminarLogica+ErrorMontar+ErrorReporte1;
                 printf("\n");
                 printf("|---------------------------------|\n");
                 printf("|(*)Errores Generales:   '%i'      |\n",ErrorT);
@@ -455,6 +472,7 @@ void menu_principal (){
                 printf("|-Errores ElimPartPrim:  '%i'      |\n",ErrorEliminarParticionPrimaria);
                 printf("|-Errores ElimPartLogi:  '%i'      |\n",ErrorEliminarLogica);
                 printf("|-Errores MontarPart:    '%i'      |\n",ErrorMontar);
+                printf("|-Errores Reporte MBR:   '%i'      |\n",ErrorReporte1);
                 printf("|                                 |\n");
                 printf("|+Instrucciones Ejetutadas:  '%i'  |\n",ContadorInstrucciones);
                 printf("|+Instrucciones Exitosas  :  '%i'  |\n",ContadorComandosExitosos);
@@ -470,6 +488,7 @@ void menu_principal (){
                 ErrorCrearParticionLogica=0;
                 ErrorEliminarLogica=0;
                 ErrorMontar=0;
+                ErrorReporte1=0;
 
                 ContadorInstrucciones=0;
                 ContadorComandosExitosos=0;
@@ -710,7 +729,10 @@ void Interprete(char entrada[])
             if(!strcmp(nombreparametro,"name"))//------------------reconoce name
             {
                 name=1;
-                strcpy(nuevafuncion.name,parametro);
+                char env[100];
+                strcpy(env,parametro);
+                quitarComillas(env);
+                strcpy(nuevafuncion.name,sincomillas);
                 limpiarvar(parametro,100);
                 limpiarvar(nombreparametro,100);
             }else
@@ -1334,13 +1356,13 @@ void Interprete(char entrada[])
                                         if(!strcmp(nuevafuncion.name,"mbr")){  //reporte mbr
 
                                             printf("\nREPORTE DE MBR... %s\n\n",nuevafuncion.path);
-                                            //ReporteMBR_dot(nuevafuncion);
+                                            ReporteMBR_dot(nuevafuncion);
                                             limpiarvar(instruccion,100);
 
                                         }else if(!strcmp(nuevafuncion.name,"disk")){  //report disk
 
                                             printf("\nREPORTE DE DISK...\n\n");
-                                            ///ReporteDiskMBR(nuevafuncion);
+                                            ReporteDiskMBR(nuevafuncion);
                                             limpiarvar(instruccion,100);
 
                                         }else{
@@ -1677,13 +1699,14 @@ if(ErrorInterprete==0 && fin==0){
                     if(!strcmp(nuevafuncion.name,"mbr")){  //reporte mbr
 
                         printf("\nREPORTE DE MBR... %s\n\n",nuevafuncion.path);
-                        //ReporteMBR_dot(nuevafuncion);
+                        ReporteMBR_dot(nuevafuncion);
+                        //ReporteDiskMBR(nuevafuncion);
                         limpiarvar(instruccion,100);
 
                     }else if(!strcmp(nuevafuncion.name,"disk")){  //report disk
 
                         printf("\nREPORTE DE DISK...\n\n");
-                        ///ReporteDiskMBR(nuevafuncion);
+                        ReporteDiskMBR(nuevafuncion);
                         limpiarvar(instruccion,100);
 
                     }else{
@@ -3988,4 +4011,1399 @@ void DesmontarParticion(Funcion funcion){
 
 
 
+
+
+void ReporteMBR_dot(Funcion funcion){
+
+    limpiarvar(cadd,5000);
+    limpiarvar(cadE,5000);
+
+
+    Funcion temporal=funcion;
+    char cad[5000]="digraph g {\ngraph [rankdir = \"LR\"];\nlabel= \"Reporte MBR\";\nfontsize = 20;\n";
+    //concatena cadenas a cad
+    char nombreextendida[500];
+
+    printf("\n\n**************** InforMacion de Disco ***********************\n\n");
+    int ErrorT=0;
+
+    //******************* Quita "comillas" en la path **************************
+    char pathauxiliar[100];
+    strcpy(pathauxiliar,funcion.path);
+
+    char finalizado[100];
+    strcpy(finalizado,"cd /\n");
+    if(pathauxiliar[0]=='\"')
+    {
+        limpiarvar(funcion.path,100);
+        int q=1;
+        while(pathauxiliar[q]!='\"')
+        {
+            char c2[1];
+            c2[0]=pathauxiliar[q];
+            strncat(funcion.path,c2,1);
+            q++;
+        }
+
+    }
+  //**************************************************************************
+
+    if(EstaMontada(funcion)==1){
+
+    int posM=posDeMontada_rep;
+    posDeMontada_rep=0;
+
+    int nombresiguales=0;
+    int numeroprimarias=0;
+    int numeroextendida=0;
+
+    int TempPrimarias=0;
+    int TempExt=0;
+
+    printf("\n");
+
+
+    char conc[500]="Subgraph cluster_mbr{\nrank=same;\nfontsize = 9;\nlabel=\"";
+    strcat(conc,funcion.path);
+    strcat(conc,"\";\nnode[shape=record, fontsize = 8,rankdir = LR];\n");
+
+    strcat(cad,conc);//---------------------------------------------------------Concatena a Dot
+
+
+        FILE* file2= fopen(montadas2[posM].path3, "rb+");
+        if (file2==NULL){  //si no existe el archivo
+            printf("\n Interprete #_ ERROR_6.1 Al tratar de Acceder al Archivo \n\n");
+            ErrorReporte1++;
+
+        }else{//si existe
+
+            MbrDisco mbr2;
+            fseek(file2,0,SEEK_SET);
+            fread(&mbr2, sizeof(MbrDisco), 1, file2);
+
+            char concatenadoFinal[5000]="MBR[label=\"{ ";
+            char cerrartabla1[100]="}|";
+            char cerrartabla2[100]="} }\"];}         ";
+
+            char conc1[5000]="{<d>Nombre|<d>mbr_tamano|<d>mbr_fecha_creacion|<d>mbr_disk_signature";
+
+            char conc2[5000]="{<d>Valor|<d>";
+            char texto[10];
+            sprintf(texto, "%d",mbr2.mbr_tamano);
+            strcat(conc2,texto);
+            strcat(conc2,"|<d>");
+            strcat(conc2,mbr2.mbr_fecha_creacion);
+            strcat(conc2,"|<d>");
+            char texto2[10];
+            sprintf(texto2, "%d",mbr2.mbr_disk_signature);
+            strcat(conc2,texto2);
+
+
+            printf("Asignacion:: %i",mbr2.mbr_disk_signature);
+            printf("\n");
+            printf("Fecha de Consulta:: %s",mbr2.mbr_fecha_creacion);
+            printf("\n");
+            printf("Tamaño de Unidad:: %i",mbr2.mbr_tamano);
+            printf("\n\n");
+            printf("----------------Particiones En Disco------------------------\n");
+
+
+
+            char conc3[5000]=".";
+            char conc4[5000]=".";
+            char texto3[50];
+
+            int z=0;
+            for(z=0;z<4;z++){ //recorre el arreglo de particiones primarias
+                int k=0;
+                int l=0;
+                while(funcion.name[k]!=NULL){
+                if(mbr2.particiones[z].part_name[k]==funcion.name[k]){
+                    l++;
+                }
+                    k++;
+                }
+
+                int interruptorPrimarias=0;
+                int interruptorExt=0;
+
+                if(mbr2.particiones[z].part_type=='p'||mbr2.particiones[z].part_type=='P')//si el tipo es primaria
+                {
+                interruptorPrimarias=1;
+                char env[100];
+                strcpy(env,mbr2.particiones[z].part_name);
+                quitarComillas(env);
+                printf("*Primaria, Nombre:: %s",sincomillas);
+                printf(",Tamaño:: %i",mbr2.particiones[z].part_size);
+                printf("\n");
+                numeroprimarias++;
+
+                }
+                if(mbr2.particiones[z].part_type=='e'||mbr2.particiones[z].part_type=='E')//si el tipo es extendida
+                {
+                interruptorExt=1;
+                char env4[100];
+                strcpy(env4,mbr2.particiones[z].part_name);
+                quitarComillas(env4);
+                printf("*Extendida, Nombre:: %s",sincomillas);
+                printf(",Tamaño:: %i",mbr2.particiones[z].part_size);
+                printf("\n");
+
+                //nombreextendida=mbr2.particiones[z].part_name;
+                strcpy(nombreextendida,mbr2.particiones[z].part_name);
+                numeroextendida++;
+
+                }
+
+                //ESCRIBIR :V
+                int ind=z+1;
+
+
+                if(interruptorPrimarias==1){
+                    interruptorPrimarias=0;
+                    //TABLA IZQUIERDA
+                    //TABLA IZQUIERDA
+                    strcat(conc3,"|<d>part_status_");
+                    //char texto3[10];
+                    sprintf(texto3, "%d",ind);
+                    strcat(conc3,texto3);
+                    strcat(conc3,"|<d>part_type_");
+                    strcat(conc3,texto3);
+                    strcat(conc3,"|<d>part_fit_");
+                    strcat(conc3,texto3);
+                    strcat(conc3,"|<d>part_start_");
+                    strcat(conc3,texto3);
+                    strcat(conc3,"|<d>part_size_");
+                    strcat(conc3,texto3);
+                    strcat(conc3,"|<d>part_name_");
+                    strcat(conc3,texto3);
+
+                    //TABLA DERECHA
+                    strcat(conc4,"|<d>");
+                    char*x=mbr2.particiones[z].part_status;
+                    strcat(conc4,&x);
+                    strcat(conc4,"|<d>");
+                    char*y=mbr2.particiones[z].part_type;
+                    strcat(conc4,&y);
+                    strcat(conc4,"|<d>");
+                    char*w=mbr2.particiones[z].part_fit;
+                    strcat(conc4,&w);
+                    strcat(conc4,"|<d>");
+                    char texto4[10];
+                    sprintf(texto4, "%d",mbr2.particiones[z].part_start);
+                    strcat(conc4,texto4);
+                    strcat(conc4,"|<d>");
+                    char texto5[10];
+                    sprintf(texto5, "%d",mbr2.particiones[z].part_size);
+                    strcat(conc4,texto5);
+                    strcat(conc4,"|<d>");
+                    char env3[100];
+                    strcpy(env3,mbr2.particiones[z].part_name);
+                    quitarComillas(env3);
+                    strcat(conc4,sincomillas);
+
+
+                }else if (interruptorExt==1){
+                    interruptorExt=0;
+                    //TABLA IZQUIERDA
+                    strcat(conc3,"|<d>part_status_");
+                    //char texto3[10];
+                    sprintf(texto3, "%d",ind);
+                    strcat(conc3,texto3);
+                    strcat(conc3,"|<d>part_type_");
+                    strcat(conc3,texto3);
+                    strcat(conc3,"|<d>part_fit_");
+                    strcat(conc3,texto3);
+                    strcat(conc3,"|<d>part_start_");
+                    strcat(conc3,texto3);
+                    strcat(conc3,"|<d>part_size_");
+                    strcat(conc3,texto3);
+                    strcat(conc3,"|<d>part_name_");
+                    strcat(conc3,texto3);
+
+                    //TABLA DERECHA
+                    strcat(conc4,"|<d>");
+                    char*a=mbr2.particiones[z].part_status;
+                    strcat(conc4,&a);
+                    strcat(conc4,"|<d>");
+                    char*b=mbr2.particiones[z].part_type;
+                    strcat(conc4,&b);
+                    strcat(conc4,"|<d>");
+                    char*c=mbr2.particiones[z].part_fit;
+                    strcat(conc4,&c);
+                    strcat(conc4,"|<d>");
+                    char texto4[10];
+                    sprintf(texto4, "%d",mbr2.particiones[z].part_start);
+                    strcat(conc4,texto4);
+                    strcat(conc4,"|<d>");
+                    char texto5[10];
+                    sprintf(texto5, "%d",mbr2.particiones[z].part_size);
+                    strcat(conc4,texto5);
+                    strcat(conc4,"|<d>");
+                    char env2[100];
+                    strcpy(env2,mbr2.particiones[z].part_name);
+                    quitarComillas(env2);
+                    strcat(conc4,sincomillas);
+
+                }else{//no hay particion aqui :v
+
+                }
+            }
+
+            //ESCRIBE EN DOT:::::::::::::::
+
+            strcat(concatenadoFinal,conc1);
+            strcat(concatenadoFinal,conc3);
+            strcat(concatenadoFinal,cerrartabla1);
+            strcat(concatenadoFinal,conc2);
+            strcat(concatenadoFinal,conc4);
+            strcat(concatenadoFinal,cerrartabla2);
+
+            strcat(cad,concatenadoFinal);
+
+            printf("\n::DOT:: %s",concatenadoFinal);//imprime el Dot
+
+
+            printf("************************************************************ \n");
+            printf("*********Numero de Particiones primarias:   %i \n",numeroprimarias);
+            printf("*********Numero de PArticiones extendidas:  %i \n",numeroextendida);
+            printf("************************************************************ \n");
+
+            if(numeroextendida!=0){
+
+                printf(":::::::::Reporte De Particion Extendida: '%s'  \n",nombreextendida);
+                strcpy(funcion.path,montadas2[posM].path3);
+                ReporteEBR_dot(funcion);
+
+            }else{
+
+                printf("--No Existe Particiones Extendidas en la Unidad \n");
+
+
+            }
+
+        }
+    fclose(file2);
+
+    }else{
+     printf("\n Interprete #_ ERROR_6.2_(MONTAJE) LA Particion No Esta Montada \n\n");
+     ErrorReporte1++;
+    }
+
+
+    strcat(cad,cadE);
+    strcat(cad,"\n}\n");
+
+    if(ErrorT==0){
+        printf("\n::DOT:: %s",cad);//imprime el Dot
+        switch_mbr=1;
+        limpiarvar(Dot_MBR,5000);
+        strcat(Dot_MBR,cad);
+        ReporteMBR_Generar(temporal);
+    }else{
+        printf("\n::_ VACIO Y CON ERRORES Errores= %d\n",ErrorT);
+        switch_mbr=0;
+    }
+
+
+
+}
+
+void ReporteEBR_dot(Funcion funcion){
+
+
+
+    char cad[5000]="digraph g {\ngraph [rankdir = \"LR\"];\nlabel= \"Reporte EBR\";\nfontsize = 20;\n";
+
+    strcat(cadE,"Subgraph ebr{");
+    int ErrorT=0;
+    int nombresiguales=0;
+    int numeroextendida=0;
+    int idextendida=-1;
+    int tamanooextendida=0;
+    int inicio=-1; int fin=-1;
+    char*nombreextendida;
+    int contador=0;
+
+
+    FILE* file2= fopen(funcion.path, "rb+");
+    if (file2==NULL)
+    {
+        printf("\n Interprete #_ ERROR_6.3 Al tratar de Acceder al Archivo \n\n\n");
+        ErrorReporte1++;
+    }
+    else
+    {
+        MbrDisco mbr2;
+        fseek(file2,0,SEEK_SET);
+        fread(&mbr2, sizeof(MbrDisco), 1, file2);
+        int z;
+
+        for(z=0;z<4;z++)
+        {
+            int k=0,l=0;
+            while(funcion.name[k]!=NULL){
+                if(mbr2.particiones[z].part_name[k]==funcion.name[k]){
+                    l++;
+                }k++;
+            }
+
+            if(mbr2.particiones[z].part_type=='e'||mbr2.particiones[z].part_type=='E')
+            {
+                numeroextendida++;
+                idextendida=z;
+                tamanooextendida=mbr2.particiones[z].part_size;
+                nombreextendida=mbr2.particiones[z].part_name;
+            }
+        }
+
+        if(nombresiguales>0){
+        printf("\n Interprete #_ ERROR_6.4 Nombre de la PArticion ya Existente \n\n %s \n",funcion.name);
+        ErrorT++;
+        ErrorReporte1++;
+        }
+        else{
+
+            int tamanoparticion=0;
+            if(funcion.unit=='b'||funcion.unit=='B')
+            {
+                tamanoparticion=funcion.size;
+            }
+            else if(funcion.unit=='k'||funcion.unit=='K')
+            {
+                tamanoparticion=(funcion.size*1024);
+            }
+            else
+            {
+                tamanoparticion=funcion.size*(1024*1024);
+            }
+
+            int vacio=1;
+            EBR ebr;
+            int actual=mbr2.particiones[idextendida].part_start;
+            //printf("posicion actual %i\n",actual);
+            fseek(file2,actual,SEEK_SET);
+            fread(&ebr, sizeof(EBR), 1, file2);
+            int next=ebr.part_next;
+            inicio=sizeof(EBR);
+
+            int fin=inicio+tamanoparticion;
+            //int contador=0;
+            int numeroebr=0;
+            int espaciolibre=mbr2.particiones[idextendida].part_size;
+            espaciolibre-=32;
+            do{
+                if(ebr.part_next!=-1){
+                    actual+=sizeof(EBR);
+                    actual+=ebr.part_size;
+                    //printf("posicion actual %i\n",actual);
+                    fseek(file2,actual,SEEK_SET);
+                    fread(&ebr, sizeof(EBR), 1, file2);
+                    next=ebr.part_next;
+                    contador++;
+                }
+                contador++;
+            }while(next!=-1);
+
+            printf("-----------------Lista de Particiones------------------------\n");
+
+            EBR indices[contador+1];
+            contador=0;
+            actual=mbr2.particiones[idextendida].part_start;
+            fseek(file2,actual,SEEK_SET);
+            fread(&indices[contador], sizeof(EBR), 1, file2);
+
+            do{
+
+                if(indices[contador].part_next!=-1){
+                    //printf("contador %i\n",contador);
+                    actual+=sizeof(EBR);
+                    actual+=indices[contador].part_size;
+                    //printf("posicion actual %i\n",actual);
+                    fseek(file2,actual,SEEK_SET);
+                    fread(&indices[contador+1], sizeof(EBR), 1, file2);
+                    next=indices[contador].part_next;
+                    //printf("siguiente %i\n",next);
+                }else{
+                    //printf("contador %i\n",contador);
+                    next=-1;
+                }
+                contador++;
+            }while(next!=-1);
+
+
+            char texto3[50];
+
+            char cerrartabla1[100]="}|";
+            char cerrartabla2[100]="} }\"];}         \n}";
+
+            int i=0;
+            for(i=0;i<contador;i++){
+
+                if(indices[i].part_start!=-1 ){//&& indices[i].part_status!='0'
+                vacio=0;
+
+                int ind=i+1;
+                strcat(cadE,"Subgraph cluster");
+                sprintf(texto3, "%d",ind);
+                strcat(cadE,texto3);
+                strcat(cadE,"{\nrank=same;\nfontsize = 9;\nlabel=\"");
+                strcat(cadE,"EBR_");
+                strcat(cadE,texto3);
+                strcat(cadE,"\";\nnode[shape=record, fontsize = 8,rankdir = LR];\n");
+
+                strcat(cadE,"EBR");
+                strcat(cadE,texto3);
+                strcat(cadE,"[label=\"{ ");
+
+                strcat(cadE,"{<d>Nombre|<d>part_status|<d>part_fit|<d>part_start|<d>part_size|<d>part_next|<d>part_name");
+
+                strcat(cadE,"}|");
+
+                strcat(cadE,"{<d>Valor|<d>");
+                char*popo=indices[i].part_status;
+                strcat(cadE,&popo);
+                strcat(cadE,"|<d>");
+                char *popo2=indices[i].part_fit;
+                strcat(cadE,&popo2);
+                strcat(cadE,"|<d>");
+                char texto4[10];
+                sprintf(texto4, "%d",indices[i].part_start);
+                strcat(cadE,texto4);
+                strcat(cadE,"|<d>");
+                char texto5[10];
+                sprintf(texto5, "%d",indices[i].part_size);
+                strcat(cadE,texto5);
+                strcat(cadE,"|<d>");
+                char texto6[10];
+                sprintf(texto6, "%d",indices[i].part_next);
+                strcat(cadE,texto6);
+                strcat(cadE,"|<d>");
+                char env[100];
+                strcpy(env,indices[i].part_name);
+                quitarComillas(env);
+                strcat(cadE,sincomillas);
+                strcat(cadE,"} }\"];}");
+
+
+
+                //printf("*Nomb%s\n",indices[i].part_name);
+                char env2[100];
+                strcpy(env,indices[i].part_name);
+                quitarComillas(env);
+
+                printf("**Logica, Nombre:: %s",sincomillas);
+                printf(",Tamaño:: %i",indices[i].part_size);
+                printf("\n");
+                printf(",Status:: %c",indices[i].part_status);
+                printf("\n");
+                printf(",Start:: %i",indices[i].part_start);
+                printf("\n");
+                printf(",Next:: %i",indices[i].part_next);
+                printf("\n");
+
+                if(fin<=(indices[i].part_start-sizeof(EBR))){
+                    break;
+                }
+                else
+                {
+                    inicio=indices[i].part_start+indices[i].part_size+sizeof(EBR);
+                    fin=inicio+tamanoparticion;
+                    numeroebr=i+1;
+                }
+                if(i==0){
+                espaciolibre=espaciolibre-indices[i].part_size;
+                }else{
+                espaciolibre=espaciolibre-indices[i].part_size-sizeof(EBR);
+                }
+
+                }
+                }
+
+            strcat(cadE,"\n}");
+
+            //aqui envez de la funcion iba el contador :v
+            printf("**************** Info ************************************** \n");
+            printf("Total:::::: %i\n",NumeroDeLogicas(funcion));
+            printf("-Posicion: %i\n",numeroebr);
+            printf("-Espacio Libre: %i\n",espaciolibre);
+            printf("Inicio: %i\n",inicio);
+            printf("Final: %i\n",fin);
+
+            printf("************************************************************ \n");
+            printf("*********Numero de Particiones Logicas:   %i \n",NumeroDeLogicas(funcion));
+            printf("************************************************************ \n");
+            printf("///////////////////////Numero de Particiones Logicas por funcion:   %i \n",NumeroDeLogicas(funcion));
+
+        }
+
+        fclose(file2);
+    }
+
+/*
+            printf("\n\n *****PArticionado Logico Finalizado ******\n\n");
+            printf("Numero de particiones extendidas= %i\n\n",numeroextendida);
+            printf("Nombre de la Particion Extendida= %s\n\n",nombreextendida);
+            printf("Numero de particiones Logicas en La Extendida= %i\n\n",contador);
+            printf("**ERRORES ENCONTRADOS::::::: %i\n",ErrorT);
+*/
+
+            printf("**ERRORES ENCONTRADOS LSL::::::: %i\n",ErrorT);
+
+            //strcat(cad,"\n}");//cerrar Documento dot
+
+            if(ErrorT==0){
+             printf("\n::DOT:: %s \n\n",cadE);//imprime el Dot
+             //strcat(Dot_EBR,cad);
+             //Dot_EBR=cad;
+             //switch_ebr=1;
+             //ReporteEBR_Generar();
+            }else{
+                 printf("Estructura con Errores :S\n\n");
+                 switch_ebr=0;
+            }
+
+}
+
+void ReporteMBR_Generar (Funcion funcion){
+
+    int ErrorT=0;
+
+    /******************* Quita "comillas" en la path **************************/
+    char pathauxiliar[100];
+    strcpy(pathauxiliar,funcion.path);
+
+    char finalizado[100];
+    strcpy(finalizado,"cd /\n");
+    if(pathauxiliar[0]=='\"')
+    {
+        limpiarvar(funcion.path,100);
+        int q=1;
+        while(pathauxiliar[q]!='\"')
+        {
+            char c2[1];
+            c2[0]=pathauxiliar[q];
+            strncat(funcion.path,c2,1);
+            q++;
+        }
+
+    }
+    //**************************************************************************
+
+
+    //**************************************************************************
+    //*******Para crear Carpetas en los Directorios si no an sido Creadas*******
+
+    int indice=0;
+    char carpeta[100];
+    while(funcion.path[indice]!='.')
+    {
+    if(funcion.path[indice]!='/')
+        {
+            //carpeta=ConcatenarCadenaCaracter(carpeta,pathoriginal[indice]);
+            char c1[1];
+            c1[0]=funcion.path[indice];
+            strncat(carpeta,c1,1);
+        }
+        else
+        {
+            strcat(finalizado,"mkdir ");
+            strcat(finalizado,"\"");
+            strcat(finalizado,carpeta);
+            strcat(finalizado,"\"");
+            strcat(finalizado,"\n");
+            strcat(finalizado,"cd ");
+            strcat(finalizado,"\"");
+            strcat(finalizado,carpeta);
+            strcat(finalizado,"\"");
+            strcat(finalizado,"\n");
+            strcat(carpeta,"");
+            limpiarvar(carpeta,100);
+
+        }
+        indice++;
+    }
+
+    printf("\nImprimir el comando q ejecuta en la terminal si el directorio no existe: %s\n",finalizado);
+
+    system(finalizado);
+
+    //**************************************************************************
+
+    //**************************************************************************
+
+
+    char consola[200]=" ";
+    FILE *flujo=fopen("/home/carlos/NetBeansProjects/Practica_Archivos1.3/Reportes/Reporte_mbr.dot","w");
+    if (flujo==NULL){
+
+        printf("\n Interprete #_ ERROR_6.5 Error Al Crear el ARchivo \n\n \n");
+        ErrorT++;
+        ErrorReporte1++;
+
+    }else{
+
+        if(switch_mbr==1){ //Esta Activado y Tiene el texto del dot
+
+        strcat(consola,"dot -Tpdf /home/carlos/NetBeansProjects/Practica_Archivos1.3/Reportes/Reporte_mbr.dot -o");
+        strcat(consola,funcion.path);
+
+        fputs(Dot_MBR,flujo);//escribe..
+        switch_mbr=0;//apaga el switch
+        fclose(flujo);
+        //system("dot -Tpdf /home/carlos/NetBeansProjects/Practica_Archivos1.3/Reportes/Reporte_mbr.dot -o /home/carlos/NetBeansProjects/Practica_Archivos1.3/Reportes/Reporte_mbr.pdf");
+        system(consola);
+        ContadorComandosExitosos++;
+
+
+        }else{//ubo un error al generar el texto del dot
+            fclose (flujo);
+        }
+    }
+
+}
+
+
+
+void quitarComillas (char a[100]){
+
+    limpiarvar(sincomillas,100);
+    char pathauxiliar[100];
+    strcpy(pathauxiliar,a);
+
+    char finalizado[100];
+    strcpy(finalizado,"cd /\n");
+
+    if(pathauxiliar[0]=='\"')
+    {
+        limpiarvar(a,100);
+        int q=1;
+        while(pathauxiliar[q]!='\"')
+        {
+            char c2[1];
+            c2[0]=pathauxiliar[q];
+            strncat(a,c2,1);
+            q++;
+        }
+
+    }
+
+    strcpy(sincomillas,a);
+
+}
+
+
+void ReporteDiskEBR(Funcion funcion){
+
+
+/*
+    char cad[5000]="digraph g {\ngraph [rankdir = \"LR\"];\nlabel= \"Reporte EBR\";\nfontsize = 20;\n";
+
+    strcat(cadE,"Subgraph ebr{");
+ *
+ *
+ *
+*/
+
+    strcat(cadd,"subgraph cluster_0 {\nrankdir = \"RL\";\nlabel = \"LOGICAS\";");
+
+
+    int ErrorT=0;
+    int nombresiguales=0;
+    //int numeroprimarias=0;
+    int numeroextendida=0;
+    int idextendida=-1;
+    int tamanooextendida=0;
+    int inicio=-1; int fin=-1;
+    char*nombreextendida;
+    int contador=0;
+
+
+    FILE* file2= fopen(funcion.path, "rb+");
+    if (file2==NULL)
+    {
+        printf("\n Interprete #_ ERROR5 disk Al tratar de Acceder al Archivo \n\n\n");
+        ErrorT++;
+    }
+    else
+    {
+        MbrDisco mbr2;
+        //printf("%d",ftell(file2));
+        fseek(file2,0,SEEK_SET);
+        fread(&mbr2, sizeof(MbrDisco), 1, file2);
+        int z;
+
+
+        for(z=0;z<4;z++)
+        {
+            int k=0,l=0;
+            while(funcion.name[k]!=NULL){
+                if(mbr2.particiones[z].part_name[k]==funcion.name[k]){
+                    l++;
+                }k++;
+            }
+
+            if(mbr2.particiones[z].part_type=='e'||mbr2.particiones[z].part_type=='E')
+            {
+                numeroextendida++;
+                idextendida=z;
+                tamanooextendida=mbr2.particiones[z].part_size;
+                nombreextendida=mbr2.particiones[z].part_name;
+            }
+        }
+
+        if(nombresiguales>0){
+        printf("\n Interprete #_ ERROR21 Nombre de la PArticion ya Existente \n\n %s \n",funcion.name);
+        ErrorT++;
+        }
+        else{
+
+/*
+            printf("particion logiaca a crear= %s \n",funcion.name);
+            printf("****particion Extendida donde se Crea= %s \n",nombreextendida);
+            printf("tamaño de particion extendida= %i \n",tamanooextendida);
+            printf("id particion = %i \n",idextendida);
+            printf("tamaño ebr: %i \n",sizeof(EBR));
+*/
+            int tamanoparticion=0;
+            if(funcion.unit=='b'||funcion.unit=='B')
+            {
+                tamanoparticion=funcion.size;
+            }
+            else if(funcion.unit=='k'||funcion.unit=='K')
+            {
+                tamanoparticion=(funcion.size*1024);
+            }
+            else
+            {
+                tamanoparticion=funcion.size*(1024*1024);
+            }
+/*
+            printf("tamaño particion: %i \n",tamanoparticion);
+*/
+
+            int vacio=1;
+            EBR ebr;
+            int actual=mbr2.particiones[idextendida].part_start;
+            //printf("posicion actual %i\n",actual);
+            fseek(file2,actual,SEEK_SET);
+            fread(&ebr, sizeof(EBR), 1, file2);
+            int next=ebr.part_next;
+            inicio=sizeof(EBR);
+
+            int fin=inicio+tamanoparticion;
+            //int contador=0;
+            int numeroebr=0;
+            int espaciolibre=mbr2.particiones[idextendida].part_size;
+            espaciolibre-=32;
+            do{
+                if(ebr.part_next!=-1){
+                    actual+=sizeof(EBR);
+                    actual+=ebr.part_size;
+                    //printf("posicion actual %i\n",actual);
+                    fseek(file2,actual,SEEK_SET);
+                    fread(&ebr, sizeof(EBR), 1, file2);
+                    next=ebr.part_next;
+                    contador++;
+                }
+                contador++;
+            }while(next!=-1);
+
+            printf("-----------------Lista de Particiones------------------------\n");
+
+            EBR indices[contador+1];
+            contador=0;
+            actual=mbr2.particiones[idextendida].part_start;
+            fseek(file2,actual,SEEK_SET);
+            fread(&indices[contador], sizeof(EBR), 1, file2);
+            do{
+                //printf("------------------------------------------------------------\n");
+                //printf("fit %c\n",indices[contador].part_fit);
+                //printf("name %s\n",indices[contador].part_name);
+                //printf("next %i\n",indices[contador].part_next);
+                //printf("size %i\n",indices[contador].part_size);
+                //printf("inicio %i\n",indices[contador].part_start);
+                //printf("estado %c\n",indices[contador].part_status);
+                //printf("------------------------------------------------------------\n");
+                if(indices[contador].part_next!=-1){
+                    //printf("contador %i\n",contador);
+                    actual+=sizeof(EBR);
+                    actual+=indices[contador].part_size;
+                    //printf("posicion actual %i\n",actual);
+                    fseek(file2,actual,SEEK_SET);
+                    fread(&indices[contador+1], sizeof(EBR), 1, file2);
+                    next=indices[contador].part_next;
+                    //printf("siguiente %i\n",next);
+                }else{
+                    //printf("contador %i\n",contador);
+                    next=-1;
+                }
+                contador++;
+            }while(next!=-1);
+
+
+            char texto3[50];
+
+/*
+            char cerrartabla1[100]="}|";
+            char cerrartabla2[100]="} }\"];}         \n}";
+*/
+
+            int i=0;
+            for(i=0;i<contador;i++){
+
+                if(indices[i].part_start!=-1 && indices[i].part_status!='0'){//&& indices[i].part_status!='0'
+                vacio=0;
+
+                int ind=i+20;
+/*
+                strcat(cadE,"Subgraph cluster");
+                sprintf(texto3, "%d",ind);
+                strcat(cadE,texto3);
+                strcat(cadE,"{\nrank=same;\nfontsize = 9;\nlabel=\"");
+                strcat(cadE,"EBR_");
+                strcat(cadE,texto3);
+                strcat(cadE,"\";\nnode[shape=record, fontsize = 8,rankdir = LR];\n");
+
+                strcat(cadE,"EBR");
+                strcat(cadE,texto3);
+                strcat(cadE,"[label=\"{ ");
+
+                strcat(cadE,"{<d>Nombre|<d>part_status|<d>part_fit|<d>part_start|<d>part_size|<d>part_next|<d>part_name");
+
+                strcat(cadE,"}|");
+
+                strcat(cadE,"{<d>Valor|<d>");
+                char *x=indices[i].part_status;
+                strcat(cad,&x);
+                strcat(cadE,"|<d>");
+                char *y=indices[i].part_fit;
+                strcat(cad,&y);
+                strcat(cadE,"|<d>");
+                char texto4[10];
+                sprintf(texto4, "%d",indices[i].part_start);
+                strcat(cadE,texto4);
+                strcat(cadE,"|<d>");
+                char texto5[10];
+                sprintf(texto5, "%d",indices[i].part_size);
+                strcat(cadE,texto5);
+                strcat(cadE,"|<d>");
+                char texto6[10];
+                sprintf(texto6, "%d",indices[i].part_next);
+                strcat(cadE,texto6);
+                strcat(cadE,"|<d>");
+                strcat(cadE,indices[i].part_name);
+                strcat(cadE,"} }\"];}");
+*/
+
+
+
+
+               // EBR
+
+
+                strcat(cadd,"n_");
+                sprintf(texto3, "%d",i);
+                strcat(cadd,texto3);
+                strcat(cadd,"[shape=\"rectangle\",label=\"EBR\"];");
+
+                //particion
+                strcat(cadd,"n_");
+                sprintf(texto3, "%d",ind);
+                strcat(cadd,texto3);
+                strcat(cadd,"[shape=\"rectangle\",label=\"NOMBRE:\n");
+                strcat(cadd,indices[i].part_name);
+
+                strcat(cadd,"\nseze:\n");
+                sprintf(texto3, "%d",indices[i].part_size);
+                strcat(cadd,texto3);
+
+                strcat(cadd,"\nstart:\n");
+                sprintf(texto3, "%d",indices[i].part_start);
+                strcat(cadd,texto3);
+                strcat(cadd,"\nnext:\n");
+                sprintf(texto3, "%d",indices[i].part_next);
+                strcat(cadd,texto3);
+                strcat(cadd,"\"];");
+
+
+                //printf("*Nomb%s\n",indices[i].part_name);
+                printf("**Logica, Nombre:: %s",indices[i].part_name);
+                printf(",Tamaño:: %i",indices[i].part_size);
+                printf("\n");
+                printf(",Status:: %c",indices[i].part_status);
+                printf("\n");
+                printf(",Start:: %i",indices[i].part_start);
+                printf("\n");
+                printf(",Next:: %i",indices[i].part_next);
+                printf("\n");
+
+                if(fin<=(indices[i].part_start-sizeof(EBR))){
+                    break;
+                }
+                else
+                {
+                    inicio=indices[i].part_start+indices[i].part_size+sizeof(EBR);
+                    fin=inicio+tamanoparticion;
+                    numeroebr=i+1;
+                }
+                if(i==0){
+                espaciolibre=espaciolibre-indices[i].part_size;
+                }else{
+                espaciolibre=espaciolibre-indices[i].part_size-sizeof(EBR);
+                }
+
+                }
+                }
+            strcat(cadd,"\n}");
+/*
+            strcat(cadE,"\n}");
+*/
+
+            //aqui envez de la funcion iba el contador :v
+            printf("**************** Info ************************************** \n");
+            printf("Total:::::: %i\n",NumeroDeLogicas(funcion));
+            printf("-Posicion: %i\n",numeroebr);
+            printf("-Espacio Libre: %i\n",espaciolibre);
+            printf("Inicio: %i\n",inicio);
+            printf("Final: %i\n",fin);
+
+            printf("************************************************************ \n");
+            printf("*********Numero de Particiones Logicas:   %i \n",NumeroDeLogicas(funcion));
+            printf("************************************************************ \n");
+            printf("///////////////////////Numero de Particiones Logicas por funcion:   %i \n",NumeroDeLogicas(funcion));
+
+        }
+
+        fclose(file2);
+    }
+
+/*
+            printf("\n\n *****PArticionado Logico Finalizado ******\n\n");
+            printf("Numero de particiones extendidas= %i\n\n",numeroextendida);
+            printf("Nombre de la Particion Extendida= %s\n\n",nombreextendida);
+            printf("Numero de particiones Logicas en La Extendida= %i\n\n",contador);
+            printf("**ERRORES ENCONTRADOS::::::: %i\n",ErrorT);
+*/
+
+            printf("**ERRORES ENCONTRADOS LSL::::::: %i\n",ErrorT);
+
+            //strcat(cad,"\n}");//cerrar Documento dot
+
+}
+
+void ReporteDiskMBR (Funcion funcion){
+    limpiarvar(cadd,5000);
+Funcion temporal=funcion;
+    int cc=0;
+/*
+    system("rm /home/carlos/NetBeansProjects/Practica_Archivos1.3/Reportes/Reporte_mbr.dot");
+    system("rm /home/carlos/NetBeansProjects/Practica_Archivos1.3/Reportes/Reporte_ebr.dot");
+    system("rm /home/carlos/NetBeansProjects/Practica_Archivos1.3/Reportes/Reporte_mbr.pdf");
+    system("rm /home/carlos/NetBeansProjects/Practica_Archivos1.3/Reportes/Reporte_ebr.pdf");
+*/
+    int numeroextendida=0;
+      strcat(cadd,"digraph g {\nnodesep=.05;rankdir=BT;node [shape=record];\nlabel= \"Disco\";\nfontsize = 20; subgraph cluster0{\n");
+      //char cad[5000]="digraph g {\ngraph [rankdir = \"LR\"];\nlabel= \"Reporte MBR\";\nfontsize = 20;\n";
+      //concatena cadenas a cad
+
+      //strcat(cad,funcion.path);
+      //printf("CONCATENAR::::::::::::::::::: %s", cad);
+
+char* nombreextendida;
+
+    printf("\n\n**************** InforMacion de Disco ***********************\n\n");
+    int ErrorT=0;
+    if(funcion.name[0]=='\"')
+    {
+//        funcion.name++;
+        int r=0;
+        while(funcion.name[r]!='\"')
+        {
+            r++;
+        }
+        funcion.name[r]='\0';
+    }
+
+
+    if(EstaMontada(funcion)==1){
+
+    int posM=posDeMontada_rep;
+    posDeMontada_rep=0;
+
+
+//******************* Quita "comillas" en la path **************************
+    char pathauxiliar[100];
+    strcpy(pathauxiliar,funcion.path);
+
+    char finalizado[100];
+    strcpy(finalizado,"cd /\n");
+    if(pathauxiliar[0]=='\"')
+    {
+        limpiarvar(funcion.path,100);
+        int q=1;
+        while(pathauxiliar[q]!='\"')
+        {
+            char c2[1];
+            c2[0]=pathauxiliar[q];
+            strncat(funcion.path,c2,1);
+            q++;
+        }
+
+    }
+  //**************************************************************************
+
+
+
+/*
+    char conc[500]="Subgraph cluster_mbr{\nrank=same;\nfontsize = 9;\nlabel=\"";
+    strcat(conc,pathoriginal);
+    strcat(conc,"\";\nnode[shape=record, fontsize = 8,rankdir = LR];\n");
+
+    strcat(cad,conc);//---------------------------------------------------------Concatena a Dot
+*/
+
+
+        FILE* file2= fopen(montadas2[posM].path3, "rb+");
+        if (file2==NULL){  //si no existe el archivo
+            printf("\n Interprete #_ ERROR5 Al tratar de Acceder al Archivo \n\n");
+            ErrorT++;
+
+        }else{//si existe
+
+            MbrDisco mbr2;
+            fseek(file2,0,SEEK_SET);
+            fread(&mbr2, sizeof(MbrDisco), 1, file2);
+
+//MBR[label="{ {<d>1111|<d>22222|<d>33333|<da>44444|<d>55555}|{<data0>data0|<data1>data1|<data2>data2|<data3>data3|<data4>data4} }"];
+
+/*
+            char concatenadoFinal[5000]="MBR[label=\"{ ";
+
+
+            char cerrartabla1[100]="}|";
+            char cerrartabla2[100]="} }\"];}         ";
+
+            char conc1[5000]="{<d>Nombre|<d>mbr_tamano|<d>mbr_fecha_creacion|<d>mbr_disk_signature";
+
+            char conc2[5000]="{<d>Valor|<d>";
+            char texto[10];
+            sprintf(texto, "%d",mbr2.mbr_tamano);
+            strcat(conc2,texto);
+            strcat(conc2,"|<d>");
+            strcat(conc2,mbr2.mbr_fecha_creacion);
+            strcat(conc2,"|<d>");
+            char texto2[10];
+            sprintf(texto2, "%d",mbr2.mbr_disk_signature);
+            strcat(conc2,texto2);
+*/
+
+
+            printf("Asignacion:: %i",mbr2.mbr_disk_signature);
+            printf("\n");
+            printf("Fecha de Consulta:: %s",mbr2.mbr_fecha_creacion);
+            printf("\n");
+            printf("Tamaño de Unidad:: %i",mbr2.mbr_tamano);
+            printf("\n\n");
+            printf("----------------Particiones En Disco------------------------\n");
+
+
+                        strcat(cadd,"\nlabel=\"PARTICIONES\";\n");
+            strcat(cadd,"node2[label=\"<f0> MBR");
+            strcat(cadd,"ID:");
+
+
+            char texto[10];
+            sprintf(texto, "%d",mbr2.mbr_disk_signature);
+            strcat(cadd,texto);
+
+            strcat(cadd,"TAmaño:");
+            char texto2[10];
+            sprintf(texto2, "%d",mbr2.mbr_tamano);
+            strcat(cadd,texto2);
+
+            strcat(cadd,"Fecha:");
+            strcat(cadd,mbr2.mbr_fecha_creacion);
+            strcat(cadd,"\", height=1];");
+/*
+
+            char conc3[5000]=".";
+            char conc4[5000]=".";
+            char texto3[50];
+*/
+
+                int nombresiguales=0;
+    int numeroprimarias=0;
+    int numeroextendida=0;
+
+    int TempPrimarias=0;
+    int TempExt=0;
+
+
+            int z=0;
+            for(z=0;z<4;z++){ //recorre el arreglo de particiones primarias
+                int k=0;
+                int l=0;
+                while(funcion.name[k]!=NULL){
+                if(mbr2.particiones[z].part_name[k]==funcion.name[k]){
+                    l++;
+                }
+                    k++;
+                }
+
+                int interruptorPrimarias=0;
+                int interruptorExt=0;
+
+                if(mbr2.particiones[z].part_type=='p'||mbr2.particiones[z].part_type=='P')//si el tipo es primaria
+                {
+                interruptorPrimarias=1;
+                printf("*Primaria, Nombre:: %s",mbr2.particiones[z].part_name);
+                printf(",Tamaño:: %i",mbr2.particiones[z].part_size);
+                printf("\n");
+                numeroprimarias++;
+
+
+                strcat(cadd,"node");
+                char texto4[10];
+                sprintf(texto4, "%d",cc);
+                strcat(cadd,texto4);
+
+
+                strcat(cadd,"[label=\"<f0>Part:");
+                strcat(cadd,mbr2.particiones[z].part_name);
+                strcat(cadd," size:");
+                char texto3[10];
+                sprintf(texto3, "%d",mbr2.particiones[z].part_size);
+                strcat(cadd,texto3);
+                strcat(cadd," Tipo: Primaria ");
+                strcat(cadd,"\",height=1];");
+
+
+
+
+                cc++;
+                }else if(mbr2.particiones[z].part_type=='e'||mbr2.particiones[z].part_type=='E')//si el tipo es extendida
+                {
+                interruptorExt=1;
+                printf("*Extendida, Nombre:: %s",mbr2.particiones[z].part_name);
+                printf(",Tamaño:: %i",mbr2.particiones[z].part_size);
+                printf("\n");
+
+                nombreextendida=mbr2.particiones[z].part_name;
+                numeroextendida++;
+
+                strcat(cadd,"node");
+                char texto4[10];
+                sprintf(texto4, "%d",cc);
+                strcat(cadd,texto4);
+
+
+                strcat(cadd,"[label=\"<f0>Part:");
+                strcat(cadd,mbr2.particiones[z].part_name);
+                strcat(cadd," size:");
+                char texto3[10];
+                sprintf(texto3, "%d",mbr2.particiones[z].part_size);
+                strcat(cadd,texto3);
+                strcat(cadd," Tipo: Extendida ");
+                strcat(cadd,"\",height=1];");
+                cc++;
+
+                }else{
+                 strcat(cadd,"node");
+                char texto4[10];
+                sprintf(texto4, "%d",cc);
+                strcat(cadd,texto4);
+
+
+                strcat(cadd,"[label=\"<f0>Part:Libre");
+
+                strcat(cadd," size:");
+                char texto3[10];
+                sprintf(texto3, "%d",mbr2.particiones[z].part_size);
+                strcat(cadd,texto3);
+                strcat(cadd," Tipo: Libre ");
+                strcat(cadd,"\",height=1];");
+
+
+
+
+                cc++;
+                }
+
+/*
+
+*/
+            }
+
+
+
+
+
+            //ESCRIBE EN DOT:::::::::::::::
+
+/*
+            strcat(concatenadoFinal,conc1);
+            strcat(concatenadoFinal,conc3);
+            strcat(concatenadoFinal,cerrartabla1);
+            strcat(concatenadoFinal,conc2);
+            strcat(concatenadoFinal,conc4);
+            strcat(concatenadoFinal,cerrartabla2);
+
+            strcat(cad,concatenadoFinal);
+
+            printf("\n::DOT:: %s",concatenadoFinal);//imprime el Dot
+*/
+
+
+            printf("************************************************************ \n");
+            //printf("*********Numero de Particiones primarias:   %i \n",numeroprimarias);
+            //printf("*********Numero de PArticiones extendidas:  %i \n",numeroextendida);
+            printf("************************************************************ \n");
+
+            if(numeroextendida!=0){
+
+                printf(":::::::::Reporte De Particion Extendida: '%s'  \n",nombreextendida);
+                //funcion.path=montadas2[posM].path2;
+                strcpy(funcion.path,montadas2[posM].path3);
+                lsl(funcion);
+                ReporteDiskEBR(funcion);
+
+            }else{
+
+                printf("--No Existe Particiones Extendidas en la Unidad \n");
+
+            }
+
+        }
+    fclose(file2);
+
+    }else{
+     printf("\n Interprete #_ ERROR5 LA Particion No Esta Montada \n\n");
+            ErrorT++;
+    }
+
+
+/*
+    strcat(cad,cadE);
+    strcat(cad,"\n}\n");
+*/
+    strcat(cadd,"\n}\n}");
+    if(ErrorT==0){
+        printf("\n::DOT:: %s",cadd);//imprime el Dot
+        switch_mbr=1;
+/*
+        strcat(Dot_MBR,cad);
+*/
+        ReporteDisk_Generar(temporal);
+    }else{
+        printf("\n::VACIO Y CON ERRORES Errores= %d\n",ErrorT);
+        switch_mbr=0;
+    }
+
+
+}
+
+void ReporteDisk_Generar(Funcion funcion){
+    int ErrorT=0;
+
+    /******************* Quita "comillas" en la path **************************/
+    char pathauxiliar[100];
+    strcpy(pathauxiliar,funcion.path);
+
+    char finalizado[100];
+    strcpy(finalizado,"cd /\n");
+    if(pathauxiliar[0]=='\"')
+    {
+        limpiarvar(funcion.path,100);
+        int q=1;
+        while(pathauxiliar[q]!='\"')
+        {
+            char c2[1];
+            c2[0]=pathauxiliar[q];
+            strncat(funcion.path,c2,1);
+            q++;
+        }
+
+    }
+    //**************************************************************************
+
+
+    //**************************************************************************
+    //*******Para crear Carpetas en los Directorios si no an sido Creadas*******
+
+    int indice=0;
+    char carpeta[100];
+    while(funcion.path[indice]!='.')
+    {
+    if(funcion.path[indice]!='/')
+        {
+            //carpeta=ConcatenarCadenaCaracter(carpeta,pathoriginal[indice]);
+            char c1[1];
+            c1[0]=funcion.path[indice];
+            strncat(carpeta,c1,1);
+        }
+        else
+        {
+            strcat(finalizado,"mkdir ");
+            strcat(finalizado,"\"");
+            strcat(finalizado,carpeta);
+            strcat(finalizado,"\"");
+            strcat(finalizado,"\n");
+            strcat(finalizado,"cd ");
+            strcat(finalizado,"\"");
+            strcat(finalizado,carpeta);
+            strcat(finalizado,"\"");
+            strcat(finalizado,"\n");
+            strcat(carpeta,"");
+            limpiarvar(carpeta,100);
+
+        }
+        indice++;
+    }
+
+    printf("\nImprimir el comando q ejecuta en la terminal si el directorio no existe: %s\n",finalizado);
+
+    system(finalizado);
+
+    //**************************************************************************
+
+
+    //**************************************************************************
+
+    char consola[200]=" ";
+    FILE *flujo=fopen("/home/carlos/NetBeansProjects/Practica_Archivos1.3/Reportes/Reporte_disk.dot","w");
+    if (flujo==NULL){
+
+        printf("\n Interprete #_ ERROR25 Error Al Crear el ARchivo \n\n \n");
+        ErrorT++;
+
+    }else{
+
+        if(switch_mbr==1){ //Esta Activado y Tiene el texto del dot
+
+        strcat(consola,"dot -Tpdf /home/carlos/NetBeansProjects/Practica_Archivos1.3/Reportes/Reporte_disk.dot -o");
+        strcat(consola,funcion.path);
+
+        fputs(cadd,flujo);//escribe..
+        switch_mbr=0;//apaga el switch
+        fclose(flujo);
+        //system("dot -Tpdf /home/carlos/NetBeansProjects/Practica_Archivos1.3/Reportes/Reporte_mbr.dot -o /home/carlos/NetBeansProjects/Practica_Archivos1.3/Reportes/Reporte_mbr.pdf");
+        system(consola);
+        ContadorComandosExitosos++;
+
+
+        }else{//ubo un error al generar el texto del dot
+            fclose (flujo);
+        }
+    }
+
+}
+
+
+
+
+
+
+
 //exec -path::"/home/carlos/Escritorio/Entrada.h"
+//exec -path::"/home/carlos/Escritorio/Entrada2.h"
