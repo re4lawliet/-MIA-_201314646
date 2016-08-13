@@ -1242,8 +1242,19 @@ void Interprete(char entrada[])
                                     {
                                         printf("\n\nInterprete #_ ERROR_3.2: Parametros 'fdisk' Invalidos(add y delete estan juntos)\n\n");
                                         ErrorComando++;
-                                    }else if(add==2 && delete_==0){//---------AUMENTAR TAMAÑO
+                                    }else if(add==2 && delete_==0 || add==1 && delete_==0){//---------AUMENTAR TAMAÑO
                                         printf("Reducir o Aumentar...\n");
+                                        if(add==2){// agrega espacio
+                                            printf("Aumentar...\n");
+                                            AgregarEspacio(nuevafuncion);
+                                        }else
+                                        if(add==1){ //quita espacio
+                                            printf("Quitar...\n");
+                                            QuitarEspacio(nuevafuncion);
+                                        }else{
+                                        printf("\n\nInterprete #_ ERROR_7.3: Parametros 'fdisk' Invalidos(en el ADD)\n\n");
+                                        ErrorComando++;
+                                        }
                                         //------------------------------------------------------Reducir o Aumentar
                                         limpiarvar(instruccion,100);
                                     }else if(add==0 && delete_==2){//_--------ELIMINAR PARTICION
@@ -1585,8 +1596,22 @@ if(ErrorInterprete==0 && fin==0){
                 {
                     printf("\n\nInterprete #_ ERROR_3.2: Parametros 'fdisk' Invalidos(add y delete estan juntos)\n\n");
                     ErrorComando++;
-                }else if(add==2 && delete_==0){//---------AUMENTAR TAMAÑO
+                }else if(add==2 && delete_==0||add==1 && delete_==0){//---------AUMENTAR TAMAÑO
                     printf("Reducir o Aumentar...\n");
+
+                    if(add==2){// agrega espacio
+                        printf("Aumentar...\n");
+                        AgregarEspacio(nuevafuncion);
+                    }else
+                    if(add==1){ //quita espacio
+                        printf("Quitar...\n");
+                        QuitarEspacio(nuevafuncion);
+
+                    }else{
+                    printf("\n\nInterprete #_ ERROR_7.3: Parametros 'fdisk' Invalidos(en el ADD)\n\n");
+                    ErrorComando++;
+                    }
+                                        //------------------------------------------------------Reducir o Aumentar
                     //------------------------------------------------------Reducir o Aumentar
                     limpiarvar(instruccion,100);
                 }else if(add==0 && delete_==2){//_--------ELIMINAR PARTICION
@@ -5081,7 +5106,8 @@ Funcion temporal=funcion;
     system("rm /home/carlos/NetBeansProjects/Practica_Archivos1.3/Reportes/Reporte_ebr.pdf");
 */
     int numeroextendida=0;
-      strcat(cadd,"digraph g {\nnodesep=.05;rankdir=BT;node [shape=record];\nlabel= \"Disco\";\nfontsize = 20; subgraph cluster0{\n");
+      strcat(cadd,"digraph g {\nnodesep=.05;rankdir=BT;node [shape=record];\nlabel= \"Disco: ");
+
       //char cad[5000]="digraph g {\ngraph [rankdir = \"LR\"];\nlabel= \"Reporte MBR\";\nfontsize = 20;\n";
       //concatena cadenas a cad
 
@@ -5177,6 +5203,8 @@ char* nombreextendida;
             strcat(conc2,texto2);
 */
 
+            strcat(cadd,montadas2[posM].path3);
+            strcat(cadd," \";\nfontsize = 20; subgraph cluster0{\n");
 
             printf("Asignacion:: %i",mbr2.mbr_disk_signature);
             printf("\n");
@@ -5424,6 +5452,7 @@ void ReporteDisk_Generar(Funcion funcion){
         }
         else
         {
+
             strcat(finalizado,"mkdir ");
             strcat(finalizado,"\"");
             strcat(finalizado,carpeta);
@@ -5481,6 +5510,233 @@ void ReporteDisk_Generar(Funcion funcion){
 }
 
 
+void AgregarEspacio(Funcion funcion){
+
+//******************* Quita "comillas" en la path **************************
+    char pathauxiliar[100];
+    strcpy(pathauxiliar,funcion.path);
+
+    char finalizado[100];
+    strcpy(finalizado,"cd /\n");
+    if(pathauxiliar[0]=='\"')
+    {
+        limpiarvar(funcion.path,100);
+        int q=1;
+        while(pathauxiliar[q]!='\"')
+        {
+            char c2[1];
+            c2[0]=pathauxiliar[q];
+            strncat(funcion.path,c2,1);
+            q++;
+        }
+
+    }
+  //**************************************************************************
+    //**************************************************************************
+
+    int nombresiguales=0;
+    int numeroprimarias=0;
+    int numeroextendida=0;
+
+    int TempPrimarias=0;
+    int TempExt=0;
+
+    // *************************INICIO DE CREACION******************************
+    FILE* file2= fopen(funcion.path, "rb+");
+    if (file2==NULL){ //si no existe el archivo
+            printf("\n Interprete #_ ERROR_3.7 Al tratar de Acceder al Archivo \n\n");
+            ErrorCrearParticionPrimaria++;
+            //Aqui Va el Error Crear PArticion Logica
+    }else{//si existe
+        //-------------------------LECTURA DEL ARCHIVO--------------------------
+        MbrDisco mbr2;
+        fseek(file2,0,SEEK_SET);
+        fread(&mbr2, sizeof(MbrDisco), 1, file2);
+        //------------------------IMPRIMIR DATOS DEL DISCO----------------------
+        printf("-----------CrearParticion Datos Del Disco--------------------\n");
+        printf("%i",mbr2.mbr_disk_signature);
+        printf("\n");
+        printf(mbr2.mbr_fecha_creacion);
+        printf("\n");
+        printf("Tamaño %i",mbr2.mbr_tamano);
+        printf("-----------INICIALMENTE Primarias----------------------------\n");
+        int z=0;
+        int particionModificar=-1;
+        for(z=0;z<4;z++){ //recorre el arreglo de particiones primarias
+
+            if(!strcmp(mbr2.particiones[z].part_name,funcion.name)){
+                particionModificar=z;
+            }
+        }//fin de Recorrido de PArticiones
+
+        if(particionModificar==-1){
+        //NO EXISTE LA PARTICION
+        }else{
+
+
+        int tamanoparticion=0;
+
+         if(funcion.unit=='b'||funcion.unit=='B') //tamaño en bytes
+        {
+            tamanoparticion=funcion.add;
+        }
+        else if(funcion.unit=='k'||funcion.unit=='K')// tamaño en kilobytes
+        {
+            tamanoparticion=(funcion.add*1024);
+        }
+        else
+        {
+            tamanoparticion=funcion.add*(1024*1024);
+        }
+
+        tamanoparticion=tamanoparticion+mbr2.particiones[particionModificar].part_size;
+        printf("Tamaño de Particion a Crear: %i \n",tamanoparticion);
+        char backupType=mbr2.particiones[particionModificar].part_type;
+
+        if(tamanoparticion<2097152){
+            printf("\n Interprete #_ ERROR_6.7 El Minimo del Tamaño de la Particion es de 2M \n\n");
+            ErrorCrearParticionPrimaria++;
+        }else{
+
+
+            //ELIMINA LA VIEJAA
+            Funcion fEliminar;
+            strcpy(fEliminar.delete_,"full");
+            strcpy(fEliminar.path,funcion.path);
+            strcpy(fEliminar.name,funcion.name);
+            EliminarParticion(fEliminar);
+
+            Funcion fAgregar;
+            strcpy(fAgregar.name,funcion.name);
+            strcpy(fAgregar.path,funcion.path);
+            fAgregar.type=backupType;
+            fAgregar.unit='b';
+            fAgregar.size=tamanoparticion;
+            strcpy(fAgregar.fit,"wf");
+            CrearParticion(fAgregar);
+
+        }//si el tamaño es el correcto
+
+        }//si existe la particion
+
+    }//fin de lo del FILE
+
+
+}
+
+void QuitarEspacio(Funcion funcion){
+
+//******************* Quita "comillas" en la path **************************
+    char pathauxiliar[100];
+    strcpy(pathauxiliar,funcion.path);
+
+    char finalizado[100];
+    strcpy(finalizado,"cd /\n");
+    if(pathauxiliar[0]=='\"')
+    {
+        limpiarvar(funcion.path,100);
+        int q=1;
+        while(pathauxiliar[q]!='\"')
+        {
+            char c2[1];
+            c2[0]=pathauxiliar[q];
+            strncat(funcion.path,c2,1);
+            q++;
+        }
+
+    }
+  //**************************************************************************
+    //**************************************************************************
+
+    int nombresiguales=0;
+    int numeroprimarias=0;
+    int numeroextendida=0;
+
+    int TempPrimarias=0;
+    int TempExt=0;
+
+    // *************************INICIO DE CREACION******************************
+    FILE* file2= fopen(funcion.path, "rb+");
+    if (file2==NULL){ //si no existe el archivo
+            printf("\n Interprete #_ ERROR_3.7 Al tratar de Acceder al Archivo \n\n");
+            ErrorCrearParticionPrimaria++;
+            //Aqui Va el Error Crear PArticion Logica
+    }else{//si existe
+        //-------------------------LECTURA DEL ARCHIVO--------------------------
+        MbrDisco mbr2;
+        fseek(file2,0,SEEK_SET);
+        fread(&mbr2, sizeof(MbrDisco), 1, file2);
+        //------------------------IMPRIMIR DATOS DEL DISCO----------------------
+        printf("-----------CrearParticion Datos Del Disco--------------------\n");
+        printf("%i",mbr2.mbr_disk_signature);
+        printf("\n");
+        printf(mbr2.mbr_fecha_creacion);
+        printf("\n");
+        printf("Tamaño %i",mbr2.mbr_tamano);
+        printf("-----------INICIALMENTE Primarias----------------------------\n");
+        int z=0;
+        int particionModificar=-1;
+        for(z=0;z<4;z++){ //recorre el arreglo de particiones primarias
+
+            if(!strcmp(mbr2.particiones[z].part_name,funcion.name)){
+                particionModificar=z;
+            }
+        }//fin de Recorrido de PArticiones
+
+        if(particionModificar==-1){
+        //NO EXISTE LA PARTICION
+        }else{
+
+
+        int tamanoparticion=0;
+
+         if(funcion.unit=='b'||funcion.unit=='B') //tamaño en bytes
+        {
+            tamanoparticion=funcion.add;
+        }
+        else if(funcion.unit=='k'||funcion.unit=='K')// tamaño en kilobytes
+        {
+            tamanoparticion=(funcion.add*1024);
+        }
+        else
+        {
+            tamanoparticion=funcion.add*(1024*1024);
+        }
+
+        tamanoparticion=mbr2.particiones[particionModificar].part_size-tamanoparticion;
+        printf("Tamaño de Particion a Crear: %i \n",tamanoparticion);
+        char backupType=mbr2.particiones[particionModificar].part_type;
+
+        if(tamanoparticion<2097152&&tamanoparticion>0){
+            printf("\n Interprete #_ ERROR_6.7 El Minimo del Tamaño de la Particion es de 2M \n\n");
+            ErrorCrearParticionPrimaria++;
+        }else{
+
+
+            //ELIMINA LA VIEJAA
+            Funcion fEliminar;
+            strcpy(fEliminar.delete_,"full");
+            strcpy(fEliminar.path,funcion.path);
+            strcpy(fEliminar.name,funcion.name);
+            EliminarParticion(fEliminar);
+
+            Funcion fAgregar;
+            strcpy(fAgregar.name,funcion.name);
+            strcpy(fAgregar.path,funcion.path);
+            fAgregar.type=backupType;
+            fAgregar.unit='b';
+            fAgregar.size=tamanoparticion;
+            strcpy(fAgregar.fit,"wf");
+            CrearParticion(fAgregar);
+
+        }//si el tamaño es el correcto
+
+        }//si existe la particion
+
+    }//fin de lo del FILE
+
+
+}
 
 
 
@@ -5488,3 +5744,12 @@ void ReporteDisk_Generar(Funcion funcion){
 
 //exec -path::"/home/carlos/Escritorio/Entrada.h"
 //exec -path::"/home/carlos/Escritorio/Entrada2.h"
+
+//fdisk +add::1 +unit::M -path::"/home/carlos/discos_cache/semestre/Disco4.dsk" -name::"Particion12"
+//fdisk -add::1 +unit::M -path::"/home/carlos/discos_cache/semestre/Disco4.dsk" -name::"Particion11"
+//rep -id::vdb1 -path::"/home/carlos/discos_cache/semestre/reporteDisk2.pdf" -name::disk
+
+//mount -path::"/home/carlos/discos_cache/entrada/D1.dsk" -name::"PRI 1"
+//mount -path::"/home/carlos/discos_cache/entrada/D3.dsk" -name::"PRI 1"
+//rep -id::vda1 -path::"/home/carlos/discos_cache/entrada/reporteD1.pdf" -name::disk
+//rep -id::vdb1 -path::"/home/carlos/discos_cache/entrada/reporteD3.pdf" -name::disk
