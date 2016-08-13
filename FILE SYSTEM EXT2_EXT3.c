@@ -47,6 +47,8 @@ int ErrorCrearParticionLogica=0;
 int ErrorEliminarLogica=0;
 int ErrorMontar=0;
 int ErrorReporte1=0;
+int ErrorReporte2=0;
+int ErrorDesmontar=0;
 int ErrorT=0;
 
 int fin=0;
@@ -179,6 +181,13 @@ typedef struct
 
 }letra;
 
+typedef struct
+{
+
+    char id[100];
+
+}ids;
+
 
 
 /*******************************************************************************/
@@ -186,6 +195,8 @@ typedef struct
 Montaje montadas[20];
 Montaje2 montadas2[50];
 letra letras[26];
+
+ids listaIds[20];
 
 int NumeroDeMontadas=0;
 int auxletras=0;
@@ -197,6 +208,7 @@ int posDeMontada_rep=0;
 
 
 /********************Area de Metodos Herramienta*******************************/
+
 
 void llenarvacios(){
 
@@ -430,6 +442,8 @@ void menu_principal (){
         ErrorEliminarLogica=0;
         ErrorMontar=0;
         ErrorReporte1=0;
+        ErrorReporte2=0;
+        ErrorDesmontar=0;
 
         ContadorInstrucciones=0;
         ContadorComandosExitosos=0;
@@ -459,7 +473,7 @@ void menu_principal (){
                 //fgets(comando,100,stdin);
                 //LeerComando(comando);
 
-                ErrorT=ErrorComando+ErrorInterprete+ErrorCrearDisco+ErrorEliminarDisco+ErrorCrearParticionPrimaria+ErrorCrearParticionLogica+ErrorEliminarParticionPrimaria+ErrorEliminarLogica+ErrorMontar+ErrorReporte1;
+                ErrorT=ErrorComando+ErrorInterprete+ErrorCrearDisco+ErrorEliminarDisco+ErrorCrearParticionPrimaria+ErrorCrearParticionLogica+ErrorEliminarParticionPrimaria+ErrorEliminarLogica+ErrorMontar+ErrorReporte1+ErrorReporte2+ErrorDesmontar;
                 printf("\n");
                 printf("|---------------------------------|\n");
                 printf("|(*)Errores Generales:   '%i'      |\n",ErrorT);
@@ -472,7 +486,9 @@ void menu_principal (){
                 printf("|-Errores ElimPartPrim:  '%i'      |\n",ErrorEliminarParticionPrimaria);
                 printf("|-Errores ElimPartLogi:  '%i'      |\n",ErrorEliminarLogica);
                 printf("|-Errores MontarPart:    '%i'      |\n",ErrorMontar);
+                printf("|-Errores DesmonPart:    '%i'      |\n",ErrorDesmontar);
                 printf("|-Errores Reporte MBR:   '%i'      |\n",ErrorReporte1);
+                printf("|-Errores Reporte Disk:  '%i'      |\n",ErrorReporte2);
                 printf("|                                 |\n");
                 printf("|+Instrucciones Ejetutadas:  '%i'  |\n",ContadorInstrucciones);
                 printf("|+Instrucciones Exitosas  :  '%i'  |\n",ContadorComandosExitosos);
@@ -489,6 +505,8 @@ void menu_principal (){
                 ErrorEliminarLogica=0;
                 ErrorMontar=0;
                 ErrorReporte1=0;
+                ErrorReporte2=0;
+                ErrorDesmontar=0;
 
                 ContadorInstrucciones=0;
                 ContadorComandosExitosos=0;
@@ -503,6 +521,8 @@ void Interprete(char entrada[])
     //***************VARIABLES GLOBALES*****************************************
 
     Funcion nuevafuncion;
+    int contadorIds=0;
+    int idlistado=0;
     int size=0;
     int unit=0;
     int path=0;
@@ -572,6 +592,9 @@ void Interprete(char entrada[])
             name=0;
             add=0;
             numeroparametros=0;
+
+            id=0;
+            idlistado=0;
 
 
             //QUITA MAYusculas--------------------------------------------------
@@ -820,6 +843,18 @@ void Interprete(char entrada[])
                 strcpy(nuevafuncion.id,parametro);
                 limpiarvar(parametro,100);
                 limpiarvar(nombreparametro,100);
+            }
+            else
+            if(nombreparametro[0]=='i'&&nombreparametro[1]=='d'&&EsNumero(nombreparametro[2])==1){
+
+                printf("hola");
+
+                idlistado=1;
+                strcpy(listaIds[contadorIds].id,parametro);
+                contadorIds++;
+                limpiarvar(parametro,100);
+                limpiarvar(nombreparametro,100);
+
             }
             else{
                 printf("\n\n Interprete #_ ERROR_1.4: Parametro Opcional Invalido \n\n");
@@ -1685,8 +1720,28 @@ if(ErrorInterprete==0 && fin==0){
                     DesmontarParticion(nuevafuncion);//-------------------------Desmontar
                     limpiarvar(instruccion,100);
 
-                }else{
+                }else if(idlistado==1){
+
+                    printf("Desmontar Particion LISTADO...\n\n");
+                    int j=0;
+                    for(j=0; j<contadorIds; j++){
+
+                        limpiarvar(nuevafuncion.id,100);
+                        strcpy(nuevafuncion.id,listaIds[j].id);
+                        printf("Desmontando Particion...%s\n\n",nuevafuncion.id);
+                        DesmontarParticion(nuevafuncion);//-------------------------Desmontar
+                    }
+
+                    contadorIds=0;
+                    int i=0;
+                    for(i=0; i<20; i++){
+                     limpiarvar(listaIds[i].id,100);
+                    }
+
+                }
+                else{
                 printf("\n\nInterprete #_ ERROR_5.9: Ingrese todos los parametros obligatorios de 'unmount'\n\n");
+                ErrorComando++;
                 }
         }//FIN UMOUNT
         else if (!strcmp(instruccion,"rep")){
@@ -1739,7 +1794,7 @@ if(ErrorInterprete==0 && fin==0){
 }
 
 void CrearDisco(Funcion funcion)
-{
+ {
 
     MbrDisco mbr;
     mbr.mbr_tamano=funcion.size;
@@ -1761,6 +1816,8 @@ void CrearDisco(Funcion funcion)
     }
     mbr.mbr_disk_signature=id;
     int tamano=0;
+
+
     if(funcion.unit=='k'||funcion.unit=='K')
     {
         tamano=funcion.size*1024;
@@ -1769,6 +1826,12 @@ void CrearDisco(Funcion funcion)
     {
         tamano=funcion.size*(1024*1024);
     }
+
+    //si el tamaño es menor a 10 megas en bytes
+    if(tamano<10485760){
+        printf("\n Interprete #_ ERROR_6.6 El Minimo de Tamaño del Disco es de 10mb :S \n\n");
+        ErrorCrearDisco++;
+    }else{
     //**************************************************************************
 
     //******************* Quita "comillas" en la path **************************
@@ -1933,6 +1996,8 @@ void CrearDisco(Funcion funcion)
         printf("\n Interprete #_ ERROR_2.5 ALCrear Disco La extencion No es Correcta \n\n");
         ErrorCrearDisco++;
     }
+
+    }//fin si cumple el tamaño
 
 }
 
@@ -2100,6 +2165,11 @@ void CrearParticion(Funcion funcion)
             tamanoparticion=funcion.size*(1024*1024);
         }
         printf("Tamaño de Particion a Crear: %i \n",tamanoparticion);
+
+        if(tamanoparticion<2097152){
+            printf("\n Interprete #_ ERROR_6.7 El Minimo del Tamaño de la Particion es de 2M \n\n");
+            ErrorCrearParticionPrimaria++;
+        }else{
 
         int vacio=1;
         int i=0;
@@ -2280,7 +2350,11 @@ void CrearParticion(Funcion funcion)
         printf("|************************************************************|\n");
         fclose(file2);
 
+    }
+
     }//siexiste el archivo
+
+
 
 }
 
@@ -4002,6 +4076,7 @@ void DesmontarParticion(Funcion funcion){
      }else{//sino esta montada Error 0
         printf("\n Interprete #_ ERROR_6.0(unmount1) La particion '%s' No esta Montada \n\n\n",funcion.id);
         ErrorT++;
+        ErrorDesmontar++;
      }
 
     MostrarMontadas();
@@ -4693,6 +4768,7 @@ void quitarComillas (char a[100]){
 }
 
 
+
 void ReporteDiskEBR(Funcion funcion){
 
 
@@ -4722,8 +4798,9 @@ void ReporteDiskEBR(Funcion funcion){
     FILE* file2= fopen(funcion.path, "rb+");
     if (file2==NULL)
     {
-        printf("\n Interprete #_ ERROR5 disk Al tratar de Acceder al Archivo \n\n\n");
+        printf("\n Interprete #_ ERROR_6.8: disk Al tratar de Acceder al Archivo \n\n\n");
         ErrorT++;
+        ErrorReporte2++;
     }
     else
     {
@@ -4753,8 +4830,9 @@ void ReporteDiskEBR(Funcion funcion){
         }
 
         if(nombresiguales>0){
-        printf("\n Interprete #_ ERROR21 Nombre de la PArticion ya Existente \n\n %s \n",funcion.name);
+        printf("\n Interprete #_ ERROR_6.9: Nombre de la PArticion ya Existente \n\n %s \n",funcion.name);
         ErrorT++;
+        ErrorReporte2++;
         }
         else{
 
@@ -5066,8 +5144,9 @@ char* nombreextendida;
 
         FILE* file2= fopen(montadas2[posM].path3, "rb+");
         if (file2==NULL){  //si no existe el archivo
-            printf("\n Interprete #_ ERROR5 Al tratar de Acceder al Archivo \n\n");
+            printf("\n Interprete #_ ERROR_7.0 Al tratar de Acceder al Archivo \n\n");
             ErrorT++;
+            ErrorReporte2++;
 
         }else{//si existe
 
@@ -5278,8 +5357,9 @@ char* nombreextendida;
     fclose(file2);
 
     }else{
-     printf("\n Interprete #_ ERROR5 LA Particion No Esta Montada \n\n");
+     printf("\n Interprete #_ ERROR_7.1 LA Particion No Esta Montada \n\n");
             ErrorT++;
+            ErrorReporte2++;
     }
 
 
@@ -5374,8 +5454,9 @@ void ReporteDisk_Generar(Funcion funcion){
     FILE *flujo=fopen("/home/carlos/NetBeansProjects/Practica_Archivos1.3/Reportes/Reporte_disk.dot","w");
     if (flujo==NULL){
 
-        printf("\n Interprete #_ ERROR25 Error Al Crear el ARchivo \n\n \n");
+        printf("\n Interprete #_ ERROR_7.2 Error Al Crear el ARchivo \n\n \n");
         ErrorT++;
+        ErrorReporte2++;
 
     }else{
 
